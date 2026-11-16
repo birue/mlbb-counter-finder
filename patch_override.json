@@ -1,0 +1,77 @@
+{
+  "patch": "MLBB 11 November 2026",
+  "updated": "2026-11-12",
+  "source": "https://www.esports.id/read/review-patch-terbaru-mlbb-november-2026-perubahan-hero-item-dan-gold-lane-19922",
+  "heroes": {
+    "Popol and Kupa": {
+      "change": "buff",
+      "note": "Skill 2 memungkinkan Popol menunggangi Kupa selama 1,5 detik; ketahanan Kupa mengikuti level Popol. Mode Alpha Wolf memperkuat efek airborne area skill 1 dan shield skill 2.",
+      "source": "https://www.esports.id/read/review-patch-terbaru-mlbb-november-2026-perubahan-hero-item-dan-gold-lane-19922"
+    },
+    "Xavier": {
+      "change": "buff",
+      "note": "Pasif, skill 1, dan skill 2 diperkuat; Mystic Field naik dari 220–345 + 65% Total Magic Power menjadi 440–690 + 130% Total Magic Power.",
+      "source": "https://www.esports.id/read/review-patch-terbaru-mlbb-november-2026-perubahan-hero-item-dan-gold-lane-19922"
+    },
+    "Lunox": {
+      "change": "mixed",
+      "note": "Damage persentase HP Power of Chaos dan damage ke creep meningkat di level awal; jeda dash ultimate Chaos dipersingkat, tetapi base damage ultimate dikurangi.",
+      "source": "https://www.esports.id/read/review-patch-terbaru-mlbb-november-2026-perubahan-hero-item-dan-gold-lane-19922"
+    },
+    "Freya": {
+      "change": "mixed",
+      "note": "Mendapat pemulihan HP dari basic attack setelah Sacred Orb, meningkat berdasarkan level dan Total Physical Attack; cooldown ultimate diperpanjang.",
+      "source": "https://www.esports.id/read/review-patch-terbaru-mlbb-november-2026-perubahan-hero-item-dan-gold-lane-19922"
+    },
+    "Gloo": {
+      "change": "nerf",
+      "note": "Immobilize skill 1 turun dari 0,8 ke 0,6 detik dan damage ledakan berkurang; rasio transfer damage ultimate turun dari 80% ke 60%.",
+      "source": "https://www.esports.id/read/review-patch-terbaru-mlbb-november-2026-perubahan-hero-item-dan-gold-lane-19922"
+    },
+    "Masha": {
+      "change": "mixed",
+      "note": "Pemulihan HP pasif turun dari 4–10% menjadi 3–6% Max HP; bonus damage skill 1 dikurangi dan damage ke minion meningkat. Efek slow berpindah dari skill 1 ke skill 2 dengan durasi lebih singkat.",
+      "source": "https://www.esports.id/read/review-patch-terbaru-mlbb-november-2026-perubahan-hero-item-dan-gold-lane-19922"
+    },
+    "Lucas": {
+      "change": "buff",
+      "note": "HP dasar dan Physical Defense dasar bertambah; skill 1 disesuaikan damage-nya dan pemulihan HP meningkat.",
+      "source": "https://www.esports.id/read/review-patch-terbaru-mlbb-november-2026-perubahan-hero-item-dan-gold-lane-19922"
+    },
+    "Aldous": {
+      "change": "buff",
+      "note": "Cooldown skill 2 menjadi 8 detik di semua level; damage reduction berubah dari nilai tetap menjadi meningkat mengikuti level skill.",
+      "source": "https://www.esports.id/read/review-patch-terbaru-mlbb-november-2026-perubahan-hero-item-dan-gold-lane-19922"
+    },
+    "Atlas": {
+      "change": "mixed",
+      "note": "Frigid Breath aktif turun dari 5 ke 4 detik dan cooldown efek freeze naik dari 2,5 ke 4 detik; rasio tambahan Physical dan Magic Defense meningkat.",
+      "source": "https://www.esports.id/read/review-patch-terbaru-mlbb-november-2026-perubahan-hero-item-dan-gold-lane-19922"
+    },
+    "Karrie": {
+      "change": "buff",
+      "note": "Skill 2 memprioritaskan hero lawan dalam jangkauan; damage dasar Lightwheel ultimate meningkat dan bonus movement speed naik dari 20% ke 30%.",
+      "source": "https://www.esports.id/read/review-patch-terbaru-mlbb-november-2026-perubahan-hero-item-dan-gold-lane-19922"
+    },
+    "Kaja": {
+      "change": "buff",
+      "note": "Mendapat tambahan cara mempertahankan mode Soaring melalui interaksi dengan minion lawan; target kebal crowd control tidak lagi dapat keluar dari area ultimate selama Divine Binding berlangsung.",
+      "source": "https://www.esports.id/read/review-patch-terbaru-mlbb-november-2026-perubahan-hero-item-dan-gold-lane-19922"
+    },
+    "Kagura": {
+      "change": "adjustment",
+      "note": "Indikator visual jarak maksimum payung dioptimalkan untuk membantu membaca jangkauan.",
+      "source": "https://www.esports.id/read/review-patch-terbaru-mlbb-november-2026-perubahan-hero-item-dan-gold-lane-19922"
+    },
+    "Uranus": {
+      "change": "adjustment",
+      "note": "Splash damage basic attack diubah menjadi Magic Damage.",
+      "source": "https://www.esports.id/read/review-patch-terbaru-mlbb-november-2026-perubahan-hero-item-dan-gold-lane-19922"
+    },
+    "Melissa": {
+      "change": "mixed",
+      "note": "Rasio transfer damage Muddles berubah dari 52% di semua level menjadi 50–60%; lebih rendah di awal dan meningkat di level akhir. Penyesuaian serupa berlaku pada pewarisan efek basic attack.",
+      "source": "https://www.esports.id/read/review-patch-terbaru-mlbb-november-2026-perubahan-hero-item-dan-gold-lane-19922"
+    }
+  }
+}

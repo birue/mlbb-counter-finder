@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLBB Counter Finder - META 2026</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Gaya Ikon ala iOS App Icon (1:1 Squircle) */
+        .ios-icon {
+            aspect-ratio: 1 / 1;
+            border-radius: 22.5%;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+            transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease;
+        }
+
+        .hero-item:active .ios-icon {
+            transform: scale(0.92);
+        }
+
+        @media (hover: hover) {
+            .hero-item:hover .ios-icon {
+                transform: translateY(-3px) scale(1.04);
+                box-shadow: 0 8px 20px rgba(56, 189, 248, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+            }
+        }
+
+        /* Animasi Modal Popup */
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.94) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-animate {
+            animation: modalFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Custom Scrollbar halus */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-sky-500 selection:text-white">
+
+    <!-- Header & Search Bar -->
+    <header class="sticky top-0 z-30 bg-slate-900/85 backdrop-blur-md border-b border-slate-800">
+        <div class="max-w-4xl mx-auto px-4 pt-4 pb-3">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span>
+                        MLBB Counter Finder
+                    </h1>
+                    <p class="text-xs text-slate-400">Counter berdasarkan role & skill • Panah menandai perubahan patch</p>
+                </div>
+                <span id="heroCountBadge" class="text-xs font-medium px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                    0 Hero
+                </span>
+            </div>
+
+            <!-- Input Pencarian -->
+            <div class="relative mb-3">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="Cari nama hero (contoh: Fanny, Gloo, Ling, Hayabusa)..." 
+                    class="w-full bg-slate-800/90 text-sm text-white placeholder-slate-400 pl-10 pr-9 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition"
+                >
+                <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <button id="clearSearchBtn" class="hidden absolute right-3 top-2.5 text-slate-400 hover:text-white p-0.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Filter Role (Scrollable Horizontal) -->
+            <div class="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar" id="roleFilters">
+                <button data-role="All" class="role-btn active px-3 py-1.5 rounded-lg text-xs font-medium bg-sky-500 text-white transition shrink-0">Semua</button>
+                <button data-role="Fighter" class="role-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition shrink-0 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-red-500"></span>Fighter</button>
+                <button data-role="Assassin" class="role-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition shrink-0 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-purple-500"></span>Assassin</button>
+                <button data-role="Mage" class="role-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition shrink-0 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-500"></span>Mage</button>
+                <button data-role="Marksman" class="role-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition shrink-0 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400"></span>Marksman</button>
+                <button data-role="Tank" class="role-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition shrink-0 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Tank</button>
+                <button data-role="Support" class="role-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition shrink-0 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-400"></span>Support</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Grid Content: iOS App Icon Layout -->
+    <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-6">
+        <div id="heroGrid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-x-3.5 gap-y-5 sm:gap-x-5 sm:gap-y-6">
+            <!-- Item hero akan dirender via JavaScript -->
+        </div>
+
+        <!-- Empty State saat pencarian tidak ditemukan -->
+        <div id="emptyState" class="hidden text-center py-16">
+            <p class="text-slate-400 text-sm">Hero tidak ditemukan. Coba kata kunci lain.</p>
+        </div>
+    </main>
+
+    <!-- Modal Popup Counter Hero -->
+    <div id="counterModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl modal-animate">
+            
+            <!-- Modal Header: Target Hero -->
+            <div class="p-4 sm:p-5 bg-slate-800/60 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-3.5">
+                    <div id="modalHeroAvatar" class="w-14 h-14 ios-icon flex items-center justify-center text-white font-bold text-lg shrink-0 relative overflow-hidden">
+                        <!-- Avatar target hero -->
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 id="modalHeroName" class="text-lg font-bold text-white">Nama Hero</h2>
+                            <span id="modalHeroPatch" class="text-lg font-bold" aria-label="Status perubahan patch" title="Status perubahan patch"></span>
+                        </div>
+                        <p id="modalHeroRole" class="text-xs text-slate-400 mt-0.5">Role • Lane</p>
+                        <p id="modalPatchNote" class="text-[11px] text-sky-400 mt-1 font-medium">Status Patch 2026</p>
+                    </div>
+                </div>
+                <button id="closeModalBtn" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition" aria-label="Tutup">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Body: Daftar Hero Counter -->
+            <div class="p-4 sm:p-5 max-h-[68vh] overflow-y-auto">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Rekomendasi Hero Counter Terbaik</h3>
+                    <span class="text-[11px] text-slate-500">Tap counter untuk cek balik</span>
+                </div>
+
+                <div id="counterList" class="space-y-2.5">
+                    <!-- Daftar counter dirender via JS -->
+                </div>
+
+                <!-- Rekomendasi Item & Battle Spell Singkat -->
+                <div class="mt-4 pt-3.5 border-t border-slate-800">
+                    <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Item & Spell Penunjang</h4>
+                    <div id="counterTips" class="text-xs text-slate-300 bg-slate-800/50 p-3 rounded-xl border border-slate-700/50 leading-relaxed">
+                        <!-- Tips item & spell -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Daftar Lengkap 133 Hero Resmi MLBB (Urutan Rilis #1 Miya s/d #133 Hirara)
+         * Disertai slug resmi untuk CDN aset gambar MLBB & data counter spesifik masing-masing hero
+         */
+        const ALL_HEROES_LIST = [
+            { order: 1, name: "Miya", slug: "miya", role: "Marksman", roles: ["Marksman"], lane: "Gold Lane", tier: "A" },
+            { order: 2, name: "Balmond", slug: "balmond", role: "Fighter", roles: ["Fighter"], lane: "Jungle / EXP", tier: "A" },
+            { order: 3, name: "Saber", slug: "saber", role: "Assassin", roles: ["Assassin"], lane: "Jungle / Roam", tier: "A+" },
+            { order: 4, name: "Alice", slug: "alice", role: "Tank", roles: ["Tank", "Mage"], lane: "EXP / Jungle", tier: "S" },
+            { order: 5, name: "Nana", slug: "nana", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "A+" },
+            { order: 6, name: "Tigreal", slug: "tigreal", role: "Tank", roles: ["Tank"], lane: "Roam", tier: "S" },
+            { order: 7, name: "Alucard", slug: "alucard", role: "Fighter", roles: ["Fighter", "Assassin"], lane: "Jungle", tier: "A" },
+            { order: 8, name: "Karina", slug: "karina", role: "Assassin", roles: ["Assassin"], lane: "Jungle", tier: "A+" },
+            { order: 9, name: "Akai", slug: "akai", role: "Tank", roles: ["Tank"], lane: "Roam / Jungle", tier: "S" },
+            { order: 10, name: "Franco", slug: "franco", role: "Tank", roles: ["Tank"], lane: "Roam", tier: "S" },
+            { order: 11, name: "Bane", slug: "bane", role: "Fighter", roles: ["Fighter", "Mage"], lane: "Jungle / EXP", tier: "A+" },
+            { order: 12, name: "Bruno", slug: "bruno", role: "Marksman", roles: ["Marksman"], lane: "Gold Lane", tier: "S" },
+            { order: 13, name: "Clint", slug: "clint", role: "Marksman", roles: ["Marksman"], lane: "Gold Lane", tier: "A+" },
+            { order: 14, name: "Rafaela", slug: "rafaela", role: "Support", roles: ["Support"], lane: "Roam", tier: "A" },
+            { order: 15, name: "Eudora", slug: "eudora", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "A+" },
+            { order: 16, name: "Zilong", slug: "zilong", role: "Fighter", roles: ["Fighter", "Assassin"], lane: "EXP Lane", tier: "B" },
+            { order: 17, name: "Fanny", slug: "fanny", role: "Assassin", roles: ["Assassin"], lane: "Jungle", tier: "S+" },
+            { order: 18, name: "Layla", slug: "layla", role: "Marksman", roles: ["Marksman"], lane: "Gold Lane", tier: "A" },
+            { order: 19, name: "Minotaur", slug: "minotaur", role: "Tank", roles: ["Tank", "Support"], lane: "Roam", tier: "S" },
+            { order: 20, name: "Lolita", slug: "lolita", role: "Support", roles: ["Support", "Tank"], lane: "Roam", tier: "S" },
+            { order: 21, name: "Hayabusa", slug: "hayabusa", role: "Assassin", roles: ["Assassin"], lane: "Jungle", tier: "S+" },
+            { order: 22, name: "Freya", slug: "freya", role: "Fighter", roles: ["Fighter"], lane: "EXP / Jungle", tier: "A+" },
+            { order: 23, name: "Gord", slug: "gord", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "A" },
+            { order: 24, name: "Natalia", slug: "natalia", role: "Assassin", roles: ["Assassin"], lane: "Roam / Jungle", tier: "A+" },
+            { order: 25, name: "Kagura", slug: "kagura", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "S" },
+            { order: 26, name: "Chou", slug: "chou", role: "Fighter", roles: ["Fighter"], lane: "Roam / EXP", tier: "S" },
+            { order: 27, name: "Sun", slug: "sun", role: "Fighter", roles: ["Fighter"], lane: "EXP / Jungle", tier: "A" },
+            { order: 28, name: "Alpha", slug: "alpha", role: "Fighter", roles: ["Fighter"], lane: "Jungle / EXP", tier: "S" },
+            { order: 29, name: "Ruby", slug: "ruby", role: "Fighter", roles: ["Fighter"], lane: "EXP / Roam", tier: "S" },
+            { order: 30, name: "Yi Sun-shin", slug: "yi-sun-shin", role: "Assassin", roles: ["Assassin", "Marksman"], lane: "Jungle", tier: "A+" },
+            { order: 31, name: "Moskov", slug: "moskov", role: "Marksman", roles: ["Marksman"], lane: "Gold Lane", tier: "S" },
+            { order: 32, name: "Johnson", slug: "johnson", role: "Tank", roles: ["Tank", "Support"], lane: "Roam", tier: "A" },
+            { order: 33, name: "Cyclops", slug: "cyclops", role: "Mage", roles: ["Mage"], lane: "Mid / Jungle", tier: "A" },
+            { order: 34, name: "Estes", slug: "estes", role: "Support", roles: ["Support"], lane: "Roam", tier: "A+" },
+            { order: 35, name: "Hilda", slug: "hilda", role: "Fighter", roles: ["Fighter", "Tank"], lane: "Roam / EXP", tier: "S" },
+            { order: 36, name: "Aurora", slug: "aurora", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "S" },
+            { order: 37, name: "Lapu-Lapu", slug: "lapu-lapu", role: "Fighter", roles: ["Fighter"], lane: "EXP Lane", tier: "A+" },
+            { order: 38, name: "Vexana", slug: "vexana", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "S" },
+            { order: 39, name: "Roger", slug: "roger", role: "Fighter", roles: ["Fighter", "Marksman"], lane: "Jungle / Gold", tier: "S" },
+            { order: 40, name: "Karrie", slug: "karrie", role: "Marksman", roles: ["Marksman"], lane: "Gold Lane", tier: "S" },
+            { order: 41, name: "Gatotkaca", slug: "gatotkaca", role: "Tank", roles: ["Tank", "Fighter"], lane: "Roam / EXP", tier: "S" },
+            { order: 42, name: "Harley", slug: "harley", role: "Mage", roles: ["Mage", "Assassin"], lane: "Jungle / Mid", tier: "S+" },
+            { order: 43, name: "Irithel", slug: "irithel", role: "Marksman", roles: ["Marksman"], lane: "Gold Lane", tier: "A+" },
+            { order: 44, name: "Grock", slug: "grock", role: "Tank", roles: ["Tank", "Fighter"], lane: "Roam", tier: "S" },
+            { order: 45, name: "Argus", slug: "argus", role: "Fighter", roles: ["Fighter"], lane: "EXP Lane", tier: "A" },
+            { order: 46, name: "Odette", slug: "odette", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "A+" },
+            { order: 47, name: "Lancelot", slug: "lancelot", role: "Assassin", roles: ["Assassin"], lane: "Jungle", tier: "S" },
+            { order: 48, name: "Diggie", slug: "diggie", role: "Support", roles: ["Support"], lane: "Roam", tier: "S" },
+            { order: 49, name: "Hylos", slug: "hylos", role: "Tank", roles: ["Tank"], lane: "Roam / EXP", tier: "S" },
+            { order: 50, name: "Zhask", slug: "zhask", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "S" },
+            { order: 51, name: "Helcurt", slug: "helcurt", role: "Assassin", roles: ["Assassin"], lane: "Jungle / Roam", tier: "S" },
+            { order: 52, name: "Pharsa", slug: "pharsa", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "S" },
+            { order: 53, name: "Lesley", slug: "lesley", role: "Marksman", roles: ["Marksman", "Assassin"], lane: "Gold Lane", tier: "A+" },
+            { order: 54, name: "Jawhead", slug: "jawhead", role: "Fighter", roles: ["Fighter"], lane: "Roam / EXP", tier: "A+" },
+            { order: 55, name: "Angela", slug: "angela", role: "Support", roles: ["Support"], lane: "Roam", tier: "S" },
+            { order: 56, name: "Gusion", slug: "gusion", role: "Assassin", roles: ["Assassin"], lane: "Jungle / Mid", tier: "A+" },
+            { order: 57, name: "Valir", slug: "valir", role: "Mage", roles: ["Mage"], lane: "Mid / Roam", tier: "S" },
+            { order: 58, name: "Martis", slug: "martis", role: "Fighter", roles: ["Fighter"], lane: "Jungle / EXP", tier: "A+" },
+            { order: 59, name: "Uranus", slug: "uranus", role: "Tank", roles: ["Tank"], lane: "EXP Lane", tier: "A+" },
+            { order: 60, name: "Hanabi", slug: "hanabi", role: "Marksman", roles: ["Marksman"], lane: "Gold Lane", tier: "A" },
+            { order: 61, name: "Chang'e", slug: "change", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "A+" },
+            { order: 62, name: "Kaja", slug: "kaja", role: "Support", roles: ["Support", "Fighter"], lane: "Roam", tier: "S" },
+            { order: 63, name: "Selena", slug: "selena", role: "Assassin", roles: ["Assassin", "Mage"], lane: "Mid / Roam", tier: "A+" },
+            { order: 64, name: "Aldous", slug: "aldous", role: "Fighter", roles: ["Fighter"], lane: "EXP Lane", tier: "B" },
+            { order: 65, name: "Claude", slug: "claude", role: "Marksman", roles: ["Marksman"], lane: "Gold Lane", tier: "S" },
+            { order: 66, name: "Vale", slug: "vale", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "A" },
+            { order: 67, name: "Leomord", slug: "leomord", role: "Fighter", roles: ["Fighter"], lane: "Jungle / EXP", tier: "A+" },
+            { order: 68, name: "Lunox", slug: "lunox", role: "Mage", roles: ["Mage"], lane: "Mid / Gold", tier: "S" },
+            { order: 69, name: "Hanzo", slug: "hanzo", role: "Assassin", roles: ["Assassin"], lane: "Jungle", tier: "A+" },
+            { order: 70, name: "Belerick", slug: "belerick", role: "Tank", roles: ["Tank"], lane: "Roam / EXP", tier: "A+" },
+            { order: 71, name: "Kimmy", slug: "kimmy", role: "Marksman", roles: ["Marksman", "Mage"], lane: "Mid / Gold", tier: "A" },
+            { order: 72, name: "Thamuz", slug: "thamuz", role: "Fighter", roles: ["Fighter"], lane: "EXP / Jungle", tier: "A+" },
+            { order: 73, name: "Harith", slug: "harith", role: "Mage", roles: ["Mage"], lane: "Gold / Mid", tier: "S+" },
+            { order: 74, name: "Minsitthar", slug: "minsitthar", role: "Fighter", roles: ["Fighter"], lane: "EXP / Roam", tier: "S" },
+            { order: 75, name: "Kadita", slug: "kadita", role: "Mage", roles: ["Mage", "Assassin"], lane: "Mid / Roam", tier: "A+" },
+            { order: 76, name: "Faramis", slug: "faramis", role: "Support", roles: ["Support", "Mage"], lane: "Mid / Roam", tier: "S" },
+            { order: 77, name: "Badang", slug: "badang", role: "Fighter", roles: ["Fighter"], lane: "Roam / EXP", tier: "A+" },
+            { order: 78, name: "Khufra", slug: "khufra", role: "Tank", roles: ["Tank"], lane: "Roam", tier: "S" },
+            { order: 79, name: "Granger", slug: "granger", role: "Marksman", roles: ["Marksman"], lane: "Gold / Jungle", tier: "S" },
+            { order: 80, name: "Guinevere", slug: "guinevere", role: "Fighter", roles: ["Fighter"], lane: "EXP / Jungle", tier: "A+" },
+            { order: 81, name: "Esmeralda", slug: "esmeralda", role: "Tank", roles: ["Tank", "Mage"], lane: "EXP / Jungle", tier: "S" },
+            { order: 82, name: "Terizla", slug: "terizla", role: "Fighter", roles: ["Fighter", "Tank"], lane: "EXP Lane", tier: "S" },
+            { order: 83, name: "X.Borg", slug: "x-borg", role: "Fighter", roles: ["Fighter"], lane: "EXP / Jungle", tier: "A+" },
+            { order: 84, name: "Ling", slug: "ling", role: "Assassin", roles: ["Assassin"], lane: "Jungle", tier: "S+" },
+            { order: 85, name: "Dyrroth", slug: "dyrroth", role: "Fighter", roles: ["Fighter"], lane: "EXP / Jungle", tier: "A+" },
+            { order: 86, name: "Lylia", slug: "lylia", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "S" },
+            { order: 87, name: "Baxia", slug: "baxia", role: "Tank", roles: ["Tank"], lane: "Jungle / Roam", tier: "A+" },
+            { order: 88, name: "Masha", slug: "masha", role: "Fighter", roles: ["Fighter", "Tank"], lane: "EXP / Jungle", tier: "A+" },
+            { order: 89, name: "Wanwan", slug: "wanwan", role: "Marksman", roles: ["Marksman"], lane: "Gold Lane", tier: "S" },
+            { order: 90, name: "Silvanna", slug: "silvanna", role: "Fighter", roles: ["Fighter"], lane: "EXP / Roam", tier: "A" },
+            { order: 91, name: "Cecilion", slug: "cecilion", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "S" },
+            { order: 92, name: "Carmilla", slug: "carmilla", role: "Support", roles: ["Support", "Tank"], lane: "Roam", tier: "S" },
+            { order: 93, name: "Atlas", slug: "atlas", role: "Tank", roles: ["Tank"], lane: "Roam", tier: "A+" },
+            { order: 94, name: "Popol and Kupa", slug: "popol-and-kupa", role: "Marksman", roles: ["Marksman"], lane: "Jungle / Gold", tier: "S" },
+            { order: 95, name: "Yu Zhong", slug: "yu-zhong", role: "Fighter", roles: ["Fighter"], lane: "EXP Lane", tier: "S" },
+            { order: 96, name: "Luo Yi", slug: "luo-yi", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "S" },
+            { order: 97, name: "Benedetta", slug: "benedetta", role: "Assassin", roles: ["Assassin", "Fighter"], lane: "EXP / Jungle", tier: "S" },
+            { order: 98, name: "Khaleed", slug: "khaleed", role: "Fighter", roles: ["Fighter"], lane: "Roam / EXP", tier: "S" },
+            { order: 99, name: "Barats", slug: "barats", role: "Tank", roles: ["Tank", "Fighter"], lane: "Jungle / EXP", tier: "A+" },
+            { order: 100, name: "Brody", slug: "brody", role: "Marksman", roles: ["Marksman"], lane: "Gold Lane", tier: "S" },
+            { order: 101, name: "Yve", slug: "yve", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "A+" },
+            { order: 102, name: "Mathilda", slug: "mathilda", role: "Support", roles: ["Support", "Assassin"], lane: "Roam", tier: "S+" },
+            { order: 103, name: "Paquito", slug: "paquito", role: "Fighter", roles: ["Fighter", "Assassin"], lane: "EXP / Jungle", tier: "S" },
+            { order: 104, name: "Gloo", slug: "gloo", role: "Tank", roles: ["Tank"], lane: "EXP / Roam", tier: "S+" },
+            { order: 105, name: "Beatrix", slug: "beatrix", role: "Marksman", roles: ["Marksman"], lane: "Gold Lane", tier: "S" },
+            { order: 106, name: "Phoveus", slug: "phoveus", role: "Fighter", roles: ["Fighter"], lane: "EXP Lane", tier: "S+" },
+            { order: 107, name: "Natan", slug: "natan", role: "Marksman", roles: ["Marksman"], lane: "Gold Lane", tier: "S" },
+            { order: 108, name: "Aulus", slug: "aulus", role: "Fighter", roles: ["Fighter"], lane: "Jungle / EXP", tier: "A" },
+            { order: 109, name: "Aamon", slug: "aamon", role: "Assassin", roles: ["Assassin"], lane: "Jungle", tier: "A+" },
+            { order: 110, name: "Valentina", slug: "valentina", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "S" },
+            { order: 111, name: "Edith", slug: "edith", role: "Tank", roles: ["Tank", "Marksman"], lane: "EXP / Roam", tier: "S" },
+            { order: 112, name: "Floryn", slug: "floryn", role: "Support", roles: ["Support"], lane: "Roam", tier: "S" },
+            { order: 113, name: "Yin", slug: "yin", role: "Fighter", roles: ["Fighter", "Assassin"], lane: "Jungle / EXP", tier: "A" },
+            { order: 114, name: "Melissa", slug: "melissa", role: "Marksman", roles: ["Marksman"], lane: "Gold Lane", tier: "S" },
+            { order: 115, name: "Xavier", slug: "xavier", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "S" },
+            { order: 116, name: "Julian", slug: "julian", role: "Assassin", roles: ["Assassin", "Fighter"], lane: "Jungle / EXP", tier: "S" },
+            { order: 117, name: "Fredrinn", slug: "fredrinn", role: "Fighter", roles: ["Fighter", "Tank"], lane: "Jungle / EXP", tier: "A+" },
+            { order: 118, name: "Joy", slug: "joy", role: "Assassin", roles: ["Assassin"], lane: "Jungle / EXP", tier: "S+" },
+            { order: 119, name: "Novaria", slug: "novaria", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "S" },
+            { order: 120, name: "Arlott", slug: "arlott", role: "Fighter", roles: ["Fighter", "Assassin"], lane: "EXP / Roam", tier: "S" },
+            { order: 121, name: "Ixia", slug: "ixia", role: "Marksman", roles: ["Marksman"], lane: "Gold Lane", tier: "A+" },
+            { order: 122, name: "Nolan", slug: "nolan", role: "Assassin", roles: ["Assassin"], lane: "Jungle", tier: "S" },
+            { order: 123, name: "Cici", slug: "cici", role: "Fighter", roles: ["Fighter"], lane: "EXP Lane", tier: "S" },
+            { order: 124, name: "Chip", slug: "chip", role: "Support", roles: ["Support", "Tank"], lane: "Roam", tier: "S+" },
+            { order: 125, name: "Zhuxin", slug: "zhuxin", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "S+" },
+            { order: 126, name: "Suyou", slug: "suyou", role: "Assassin", roles: ["Assassin", "Fighter"], lane: "Jungle / EXP", tier: "S+" },
+            { order: 127, name: "Lukas", slug: "lukas", role: "Fighter", roles: ["Fighter"], lane: "EXP / Jungle", tier: "S" },
+            { order: 128, name: "Kalea", slug: "kalea", role: "Support", roles: ["Support", "Fighter"], lane: "Roam", tier: "S+" },
+            { order: 129, name: "Zetian", slug: "zetian", role: "Mage", roles: ["Mage"], lane: "Mid Lane", tier: "S" },
+            { order: 130, name: "Obsidia", slug: "obsidia", role: "Marksman", roles: ["Marksman"], lane: "Gold Lane", tier: "S" },
+            { order: 131, name: "Sora", slug: "sora", role: "Fighter", roles: ["Fighter", "Assassin"], lane: "EXP / Jungle", tier: "S+" },
+            { order: 132, name: "Marcel", slug: "marcel", role: "Support", roles: ["Support"], lane: "Roam", tier: "S+" },
+            { order: 133, name: "Hirara", slug: "hirara", role: "Assassin", roles: ["Assassin"], lane: "Jungle", tier: "S+" }
+        ];
+
+        /**
+         * Database Counter Spesifik Mekanik Skill untuk Seluruh 133 Hero
+         * Format ringkas per hero: [statusPatch, [[counter1, winRate, alasan], ...], tipsItemSpell]
+         */
+        const FULL_COUNTER_DATA = {
+            "miya": ["Late Game DPS • Lemah terhadap burst & anti-attack speed", [["Belerick", "58.1%", "Pasif duri memantulkan seluruh panah Split Shot Miya."], ["Saber", "56.8%", "Mengunci Miya sebelum sempat mengaktifkan Hidden Moonlight."], ["Gatotkaca", "55.9%", "Taunt & pasif Rage memaksa Miya membunuh dirinya sendiri."], ["Natalia", "55.2%", "Kebal basic attack di dalam tabir asap."]], "Gunakan Blade Armor & Dominance Ice untuk meredam DPS kritikal Miya."],
+            "balmond": ["Early-Mid Spin & True Damage • Lemah terhadap CC & kite", [["Valir", "57.5%", "Searing Torrent terus mendorong Balmond keluar dari jangkauan Cyclone Sweep."], ["X.Borg", "56.2%", "True Damage berkelanjutan menghancurkan Balmond saat berputar."], ["Dyrroth", "55.4%", "Mengurangi armor Balmond 75% dan menang adu lifesteal."], ["Karrie", "54.8%", "True Damage cepat melelehkan HP tebal Balmond."]], "Beli item Anti-Heal (Sea Halberd / Dominance Ice) agar pasif regen kill-nya tidak deras."],
+            "saber": ["Single-Target Lock • Rentan setelah Ultimate habis", [["Argus", "58.4%", "Eternal Evil mengabaikan seluruh damage Triple Sweep dan membalikkan keadaan."], ["Diggie", "57.1%", "Time Journey melepaskan rekan setim dari efek airborne Saber."], ["Khufra", "55.8%", "Menggagalkan Charge Saber sebelum menyentuh target."], ["Eudora", "55.0%", "Menyergap balik Saber yang tidak memiliki skill kabur."]], "Gunakan Antique Cuirass, Winter Crown, atau Wind of Nature."],
+            "alice": ["Sustained Magic & HP Drain • Lemah terhadap Anti-Heal & Burst", [["Baxia", "58.3%", "Pasif Baxia Mark memotong drastis pemulihan HP Blood Ode Alice."], ["Karrie", "57.0%", "True Damage menembus HP dan shield tebal Alice di late game."], ["Valir", "55.9%", "Mendorong Alice menjauh dari kerumunan tim agar tidak bisa menyedot darah."], ["Lunox", "55.2%", "Chaos Assault melelehkan HP Alice dalam hitungan detik."]], "Wajib beli Glowing Wand, Sea Halberd, atau Dominance Ice sejak early-mid game."],
+            "nana": ["Poke & Molina Transform • Lemah terhadap assassin jarak jauh", [["Lancelot", "56.9%", "Thorned Rose membuat Lancelot kebal terhadap kejaran Molina."], ["Hayabusa", "56.1%", "Mampu menyelam ke belakang dan memecahkan pasif Nana dengan cepat."], ["Fanny", "55.4%", "Kecepatan kabel melampaui jangkauan ledakan Molina Smooch."], ["Helcurt", "54.7%", "Silence memutus kombo skill Nana sebelum sempat kabur."]], "Gunakan Athena's Shield untuk menahan burst boomerang dan Ultimate Nana."],
+            "tigreal": ["Area Set-Up CC • Sangat mudah digagalkan oleh anti-CC", [["Diggie", "60.4%", "Time Journey membatalkan Implosion Tigreal secara instan."], ["Valir", "57.8%", "Mendorong mundur Tigreal saat mencoba Flicker-Ultimate."], ["Akai", "56.2%", "Heavy Spin mendorong Tigreal keluar dari formasi tim."], ["Wanwan", "55.1%", "Needles in Flowers langsung membebaskan diri dari CC Tigreal."]], "Gunakan Purify atau Tough Boots untuk mengurangi durasi stun."],
+            "alucard": ["High Lifesteal & Chase • Lemah terhadap Hard CC & Anti-Heal", [["Franco", "58.2%", "Suppress menghentikan Alucard total di tengah lompatan."], ["Baxia", "57.0%", "Memotong lifesteal Alucard secara alami tanpa perlu menunggu item."], ["Eudora", "56.1%", "Stun instan membunuh Alucard sebelum ia sempat memulihkan darah."], ["Minsitthar", "55.3%", "Arena Ultimate mematikan semua skill lompatan pasif Alucard."]], "Wajib beli Dominance Ice / Sea Halberd / Glowing Wand."],
+            "karina": ["True Damage & Reset Kill • Kebal Basic Attack saat Skill 1", [["Eudora", "57.4%", "Skill magis menembus Dance of Blades dan meledakkan Karina."], ["Franco", "56.5%", "Suppress mengunci Karina sebelum ia mendapatkan reset Ultimate."], ["Lunox", "55.8%", "Burst damage magis tidak terpengaruh kekebalan basic attack Karina."], ["Ruby", "55.0%", "CC singkat beruntun memutus ritme reset skill Karina."]], "Gunakan Athena's Shield atau Winter Crown saat Karina mengincar."],
+            "akai": ["Heavy Spin Wall-Pin • Lemah terhadap efek anti-CC & knockback", [["Diggie", "59.6%", "Time Journey membebaskan seluruh rekan yang terjepit di tembok."], ["Valir", "57.1%", "Searing Torrent menghentikan putaran Heavy Spin Akai."], ["Karrie", "56.0%", "True Damage menghancurkan ketebalan darah Akai dengan mudah."], ["Claude", "54.9%", "Mampu berpindah posisi lewat Battle Mirror Image saat didorong."]], "Gunakan Purify atau jaga jarak dari tembok sempit di area Lord/Turtle."],
+            "franco": ["Iron Hook & Suppress • Lemah jika hook meleset atau ter-poke", [["Diggie", "57.8%", "Menetralkan efek Hook (meski tidak membatalkan Suppress, tetap merusak follow-up musuh)."], ["Wanwan", "56.5%", "Mobilitas lompatan menyulitkan Franco mendaratkan Iron Hook."], ["Lancelot", "55.6%", "Skill 2 dapat menangkis tarikan Iron Hook secara presisi."], ["Belerick", "54.8%", "Memanfaatkan tarikan Franco untuk masuk dan melakukan Taunt ke tim lawan."]], "Selalu bersembunyi di balik minion dan gunakan Winter Crown saat ter-suppress."],
+            "bane": ["Hybrid Burst & Tower Push • Lemah terhadap mobilitas & dive", [["Hayabusa", "56.7%", "Mudah menghindari gelombang hiu Ultimate dan mengeliminasi Bane."], ["Ling", "55.9%", "Menyergap Bane di lini belakang sebelum sempat memulihkan HP."], ["Chou", "55.1%", "Menendang Bane keluar dari posisi aman saat teamfight."], ["Lolita", "54.4%", "Memblokir tembakan Crab Claw Cannon milik Bane."]], "Beli item Anti-Heal untuk menekan pemulihan HP dari Ale (Skill 2)."],
+            "bruno": ["Critical Volley Ball • Lemah terhadap dive & refleksi damage", [["Belerick", "57.9%", "Memantulkan damage kritikal besar dari tendangan bola Bruno."], ["Lolita", "56.8%", "Perisai Lolita memblokir dan memantulkan bola Ultimate Bruno."], ["Hayabusa", "56.0%", "Menghabisi Bruno di lini belakang dalam satu kali kombo."], ["Saber", "55.2%", "Mengunci Bruno sebelum ia sempat mengumpulkan stack kritikal."]], "Gunakan Blade Armor dan Dominance Ice untuk meredam kritikal Bruno."],
+            "clint": ["Burst Basic Attack Pasif • Lemah terhadap assassin lincah", [["Hayabusa", "56.9%", "Shadow Kill menghindari serangan pasif garis lurus Clint."], ["Lancelot", "56.1%", "Mudah mendekati dan menghabisi Clint dengan kombo cepat."], ["Natalia", "55.3%", "Kebal terhadap tembakan pasif Clint di dalam tabir asap."], ["Claude", "54.5%", "Unggul teamfight late game dan mobilitas tinggi."]], "Gunakan Antique Cuirass untuk mengurangi burst damage dari skill-nya."],
+            "rafaela": ["Team Heal & Speed Boost • Berdarah tipis & minim escape", [["Natalia", "57.6%", "Menculik Rafaela di lini belakang dengan sangat cepat."], ["Saber", "56.5%", "Satu kombo Triple Sweep langsung menumbangkan Rafaela."], ["Baxia", "55.8%", "Memotong efektivitas Holy Healing Rafaela sepanjang pertandingan."], ["Helcurt", "55.0%", "Memutus jarak Rafaela dari core timnya saat kegelapan turun."]], "Incar Rafaela di awal teamfight dan gunakan item Anti-Heal."],
+            "eudora": ["Target-Lock Stun & Burst • Tanpa skill kabur & cooldown lama", [["Benedetta", "58.2%", "An Eye for An Eye memantulkan stun Ball Lightning balik ke Eudora."], ["Lancelot", "57.0%", "Skill 2 menghindari sambaran petir Ultimate Eudora."], ["Helcurt", "56.1%", "Silence membuat Eudora tidak bisa mengeluarkan satupun skill."], ["Hayabusa", "55.4%", "Shadow Kill membuat Hayabusa tidak bisa ditarget oleh Eudora."]], "Wajib beli Athena's Shield atau Rose Gold Meteor."],
+            "zilong": ["Split Push & Burst Single • Sangat rapuh terhadap CC & armor", [["Belerick", "58.8%", "Taunt dan pasif duri membuat Zilong tumbang saat menusuk cepat."], ["Gatotkaca", "57.5%", "Pasif Rage menyerap serangan fisik Zilong dan membalas dengan keras."], ["Dominance/Phoveus", "56.0%", "Phoveus menghukum setiap lompatan Spear Strike Zilong."], ["Eudora", "55.4%", "Stun instan langsung menghentikan lari cepat Supreme Warrior."]], "Gunakan Blade Armor, Dominance Ice, atau Wind of Nature."],
+            "fanny": ["High Mobility Steel Cable • Wajib dikunci Hard CC / Anti-Dash", [["Khufra", "58.4%", "Bouncing Ball menghentikan Steel Cable Fanny seketika di udara."], ["Franco", "56.1%", "Bloody Hunt memberikan Suppress mutlak tanpa bisa dibatalkan."], ["Minsitthar", "55.8%", "King's Calling mengunci seluruh penggunaan kabel di dalam arena."], ["Eudora", "54.2%", "Kombo stun instan + burst mematikan Fanny sebelum kabur."]], "Gunakan Antique Cuirass dan invasi buff ungu Fanny sejak menit pertama."],
+            "layla": ["Jarak Tembak Terjauh Late Game • Tanpa mobilitas sama sekali", [["Hayabusa", "58.9%", "Quad Shadow langsung mencapai posisi Layla sejauh apapun."], ["Ling", "57.8%", "Melompati tembok dan mengeksekusi Layla tanpa perlawanan."], ["Saber", "57.0%", "Charge + Triple Sweep membunuh Layla dalam 1 detik."], ["Fanny", "56.4%", "Terbang melintasi garis depan langsung ke arah Layla."]], "Tekan Layla di early game sebelum ia mendapatkan item damage."],
+            "minotaur": ["Area Knock-up & Heal • Lemah terhadap anti-CC & true damage", [["Diggie", "59.2%", "Time Journey membatalkan 3 kali bantingan Minoan Fury."], ["Karrie", "57.1%", "True Damage menghancurkan HP tebal Minotaur dengan cepat."], ["Valir", "56.0%", "Mendorong Minotaur menjauh sebelum sempat melompat ke tengah tim."], ["Baxia", "55.1%", "Mengurangi efek pemulihan HP dari Motivation Roar."]], "Gunakan item Anti-Heal dan Purify."],
+            "lolita": ["Guardian's Bulwark Reflect • Lemah terhadap serangan melee & CC", [["Franco", "57.3%", "Iron Hook menembus perisai Lolita dan membatalkan Ultimatenya."], ["Chou", "56.4%", "Tendangan Chou menembus perisai depan Lolita dan menculiknya."], ["Valir", "55.6%", "Menggagalkan channeling Noumenon Blast dari jarak aman."], ["Diggie", "54.9%", "Menetralkan stun area dari Ultimate Lolita."]], "Hindari menembakkan proyektil ke arah perisai aktif Lolita."],
+            "hayabusa": ["Shadow Mobility & Untargetable Ult • Rentan terhadap Lock CC", [["Saber", "56.9%", "Triple Sweep mengunci Hayabusa begitu ia keluar dari bayangan."], ["Eudora", "55.2%", "Target-lock stun membunuh Hayabusa sebelum sempat menekan Ultimate."], ["Chou", "54.8%", "Menendang Hayabusa menjauh dari bayangan pelariannya."], ["Franco", "54.5%", "Suppress menghentikan manuver Quad Shadow secara mutlak."]], "Gunakan Winter Crown untuk membatalkan seluruh serangan Ougi: Shadow Kill."],
+            "freya": ["Shield & Attack Speed Valkyrie • Lemah terhadap anti-shield & kite", [["Esmeralda", "58.6%", "Menyerap seluruh shield tebal Freya menjadi HP miliknya sendiri."], ["Phoveus", "57.2%", "Setiap lompatan combo Freya memicu skill Phoveus tanpa henti."], ["Valir", "56.0%", "Mendorong Freya menjauh selama durasi mode Valkyrie aktif."], ["Minsitthar", "55.3%", "Mengunci lompatan Skill 1 dan Skill 2 Freya di arena."]], "Beli Dominance Ice untuk memperlambat attack speed dan shield Freya."],
+            "gord": ["True Damage Laser & Poke • Tidak punya skill kabur saat Ultimate", [["Hayabusa", "58.0%", "Menyerang balik Gord yang diam di tempat saat menembakkan laser."], ["Fanny", "57.2%", "Menyergap Gord dengan cepat dari sudut tak terduga."], ["Lancelot", "56.3%", "Menghindari stun bola Gord dengan mudah dan menculiknya."], ["Natalia", "55.5%", "Mendekati Gord tanpa terlihat di belakang garis depan."]], "Gunakan Radiant Armor untuk menahan damage magis berkelanjutan Gord."],
+            "natalia": ["Stealth & Basic Attack Immune • Lemah terhadap skill area & reveal", [["Rafaela", "57.5%", "Light of Retribution membuka penyamaran Natalia di sekitar secara otomatis."], ["Hylos", "56.4%", "Ring of Punishment terus melukai dan memunculkan Natalia."], ["Saber", "55.6%", "Pedang berputar membatalkan kamuflase Natalia dan langsung menguncinya."], ["Eudora", "54.9%", "Skill magis menembus kekebalan basic attack tabir asap Natalia."]], "Selalu perhatikan tanda seru di atas kepala dan beli Antique Cuirass."],
+            "kagura": ["Payung Escape & Burst • Lemah terhadap burst cepat saat tanpa payung", [["Helcurt", "56.8%", "Silence mencegah Kagura berpindah ke payung Rasho Umbrella Flee."], ["Hayabusa", "56.0%", "Mampu mengejar perpindahan posisi Kagura dengan bayangan."], ["Lancelot", "55.2%", "Skill 2 menghindari tarikan Yin Yang Overturn dengan mudah."], ["Franco", "54.6%", "Suppress mengunci Kagura bahkan sebelum ia sempat membersihkan CC."]], "Gunakan Athena's Shield untuk menahan satu kali kombo payung Kagura."],
+            "chou": ["Single-Target Kick & Immune • Lemah terhadap anti-dash & suppress", [["Minsitthar", "57.7%", "King's Calling menghentikan seluruh Jeet Kune Do dan Shunpo Chou."], ["Phoveus", "56.8%", "Menghukum 4 kali dash milik Chou dengan lompatan beruntun."], ["Franco", "55.9%", "Suppress tidak bisa dihindari oleh efek immune Shunpo Chou."], ["Diggie", "55.1%", "Time Journey menyelamatkan rekan setim yang ditendang Chou."]], "Gunakan Purify untuk lepas dari tendangan The Way of Dragon."],
+            "sun": ["Kloning & Push Cepat • Memberi stack & spell vamp gratis ke musuh", [["Ruby", "58.3%", "Mendapatkan spell vamp masif dari 3 tubuh Sun sekaligus."], ["Alpha", "57.1%", "True Damage & Beta menyapu seluruh bayangan Sun dengan cepat."], ["Terizla", "56.2%", "Ayunan palu area menghancurkan kloning Sun dalam sekejap."], ["Silvanna", "55.4%", "Mengunci Sun yang asli di dalam Imperial Justice."]], "Beli Dominance Ice untuk memperlambat attack speed Sun dan kloningnya."],
+            "alpha": ["True Damage & Spell Vamp Deras • Lemah terhadap Anti-Heal & Kite", [["Valir", "57.4%", "Mendorong Alpha menjauh agar tidak bisa mengayunkan Force Swing."], ["Baxia", "56.5%", "Memotong pemulihan HP Alpha secara signifikan."], ["Karrie", "55.8%", "Mengalahkan Alpha dalam adu True Damage dari jarak aman."], ["Dyrroth", "55.0%", "Menang duel 1v1 di early game lewat pengurangan armor."]], "Wajib beli item Anti-Heal (Sea Halberd / Dominance Ice / Glowing Wand)."],
+            "ruby": ["Crowd Control & Spell Vamp Area • Lemah terhadap Anti-Heal & Anti-Dash", [["Phoveus", "57.9%", "Setiap lompatan pasif Ruby setelah skill memicu Ultimate Phoveus."], ["Minsitthar", "56.8%", "Menghentikan lompatan pasif Ruby di dalam area Ultimate."], ["Baxia", "55.9%", "Mengurangi efektivitas spell vamp Ruby secara drastis."], ["Valir", "55.1%", "Menjaga jarak agar Ruby tidak bisa menarik dengan I'm Offended!."]], "Wajib gunakan item Anti-Heal sejak early-mid game."],
+            "yi-sun-shin": ["Global Vision & Weapon Mastery • Lemah terhadap invasi early", [["Fanny", "57.0%", "Menginvasi jungle YSS di early game sebelum ia mendapatkan item."], ["Ling", "56.2%", "Unggul mobilitas rotasi dan mampu mengincar YSS di lini belakang."], ["Saber", "55.3%", "Mengunci YSS sebelum ia sempat menggunakan Traceless (Skill 1)."], ["Hilda", "54.7%", "Mengganggu farm YSS sejak menit pertama permainan."]], "Gunakan Blade Armor atau Antique Cuirass untuk menahan kritikal pasifnya."],
+            "moskov": ["Attack Speed & Wall Stun • Jarak tembak pendek", [["Belerick", "58.0%", "Memantulkan seluruh serangan cepat Moskov kembali padanya."], ["Lolita", "56.9%", "Guardian's Bulwark memblokir tembakan dan tombak Ultimate Moskov."], ["Saber", "56.1%", "Langsung mengeliminasi Moskov saat ia masuk ke jarak tembaknya."], ["Eudora", "55.2%", "Stun instan membunuh Moskov sebelum sempat menekan Spear of Quiescence."]], "Gunakan Blade Armor & Dominance Ice, serta hindari berdiri sejajar tembok."],
+            "johnson": ["Car Crash Global Gank • Mudah dihentikan oleh dinding/tank depan", [["Grock", "58.4%", "Guardian's Barrier memunculkan tembok buatan untuk menabrakkan mobil Johnson."], ["Diggie", "57.5%", "Time Journey membatalkan stun tabrakan mobil Johnson."], ["Belerick", "56.3%", "Sengaja menabrakkan diri ke mobil Johnson untuk melindungi core."], ["Zhask", "55.2%", "Menaruh Nightmaric Spawn di jalur mobil Johnson."]], "Gunakan Athena's Shield atau Radiant Armor untuk menahan damage listriknya."],
+            "cyclops": ["Single-Target Lockdown & Cooldown Reset • Lemah terhadap burst", [["Lancelot", "56.8%", "Thorned Rose menghilangkan bola-bola Planets Attack dan menghindari kurungan."], ["Hayabusa", "56.0%", "Shadow Kill membatalkan targetan Star Power Lockdown."], ["Lolita", "55.3%", "Memblokir seluruh bola serangan Cyclops dengan perisai."], ["Harley", "54.5%", "Unggul burst cepat sebelum Cyclops sempat melakukan spam skill."]], "Gunakan Radiant Armor untuk menahan rentetan bola Planets Attack."],
+            "estes": ["Mega Team Heal • Sangat lemah terhadap Anti-Heal & Damage Area", [["Luo Yi", "60.5%", "Menghukum tim lawan yang selalu berkumpul rapat di sekitar Estes."], ["Carmilla", "58.9%", "Curse of Blood membagikan damage ke seluruh tim yang menempel pada Estes."], ["Baxia", "57.8%", "Memotong pemulihan HP Blessing of Moon Goddess hingga berkurang drastis."], ["Atlas", "56.7%", "Menarik seluruh anggota tim yang berkerumun di sekitar Estes."]], "Wajib beli item Anti-Heal di slot pertama/kedua dan incar Estes lebih dulu."],
+            "hilda": ["Early Invade & Bush Regen • Menurun efektivitasnya di late game", [["Karrie", "57.2%", "True Damage menghancurkan Hilda dengan mudah saat memasuki mid-late game."], ["Valir", "56.4%", "Mendorong mundur Hilda setiap kali ia berlari masuk ke jungle."], ["Dyrroth", "55.6%", "Mengurangi armor Hilda dan memenangkan duel jarak dekat."], ["X.Borg", "54.9%", "Mengikis HP Hilda dengan True Damage saat ia mencoba masuk semak."]], "Beli item Anti-Heal untuk menekan regenerasi HP Hilda di dalam semak."],
+            "aurora": ["Freeze Area & Pasif Kebal Mati • Minim mobilitas kabur", [["Diggie", "58.1%", "Time Journey membebaskan tim dari efek beku Bitter Frost."], ["Fanny", "56.9%", "Menyergap Aurora dengan cepat sebelum sempat menumpuk pasif beku."], ["Lancelot", "56.0%", "Skill 2 menghindari efek beku area dari Ultimate Aurora."], ["Helcurt", "55.2%", "Silence mencegah Aurora mengeluarkan kombo pembeku."]], "Gunakan Athena's Shield dan Tough Boots untuk mengurangi durasi beku."],
+            "lapu-lapu": ["Heavy-Sword Stance & CC Immune • Lemah terhadap True Damage", [["Esmeralda", "56.8%", "Menyerap shield yang dihasilkan Lapu-Lapu saat bertarung."], ["Karrie", "56.0%", "True Damage menembus pertahanan tinggi mode Heavy-Sword."], ["Valir", "55.2%", "Menjaga jarak agar Lapu-Lapu gagal mendaratkan 3 tebasan Ultimate."], ["Dyrroth", "54.5%", "Mengurangi Physical Defense Lapu-Lapu saat berduel di EXP Lane."]], "Gunakan Antique Cuirass untuk menahan tebasan Bravest Fighter."],
+            "vexana": ["Burst Lord & Pasif Ledakan • Minim mobilitas & rentan dive", [["Lancelot", "57.1%", "Mudah menembus garis depan dan menghindari tarikan tangan Vexana."], ["Hayabusa", "56.3%", "Menyergap Vexana di lini belakang dalam sekejap."], ["Fanny", "55.6%", "Terlalu cepat untuk ditangkap oleh Cursed Oath Vexana."], ["Ling", "54.9%", "Melompati tembok langsung ke posisi Vexana."]], "Gunakan Athena's Shield untuk menahan ledakan kombo Vexana."],
+            "roger": ["Wolf Execution & Chase • Lemah terhadap Hard CC & Burst", [["Franco", "56.8%", "Suppress menghentikan Roger saat melompat dalam wujud serigala."], ["Khufra", "56.0%", "Bouncing Ball memblokir lompatan Lycan Pounce milik Roger."], ["Eudora", "55.2%", "Stun instan membunuh Roger sebelum sempat menggunakan immune Skill 1."], ["Gatotkaca", "54.5%", "Taunt memaksa Roger memukul armor tebal Gatotkaca."]], "Gunakan Antique Cuirass atau Wind of Nature."],
+            "karrie": ["Tank-Killer True Damage • Jarak tembak pendek & rapuh", [["Lolita", "57.8%", "Guardian's Bulwark memantulkan seluruh roda cahaya Karrie."], ["Hayabusa", "56.7%", "Menyergap Karrie dengan mudah karena jangkauan serangnya dekat."], ["Pharsa", "55.9%", "Membombardir Karrie dari luar jangkauan tembakannya."], ["Belerick", "55.0%", "Taunt & pantulan damage mengganggu ritme serangan Karrie."]], "Gunakan Dominance Ice untuk memperlambat Attack Speed Karrie."],
+            "gatotkaca": ["Taunt & Magic Bruiser • Lemah terhadap True Damage & Kite", [["Karrie", "57.6%", "True Damage menembus pertahanan fisik tinggi pasif Gatotkaca."], ["Lunox", "56.5%", "Damage magis berbasis HP melelehkan darah tebal Gatotkaca."], ["Valir", "55.8%", "Mendorong Gatotkaca menjauh sebelum sempat mendaratkan Taunt."], ["Diggie", "55.0%", "Membatalkan efek knock-up Avatar of the Guardian."]], "Gunakan Radiant Armor dan item Anti-Heal."],
+            "harley": ["Buff Burst Magic • Sangat ter-counter oleh pemantul proyektil", [["Lolita", "59.8%", "Guardian's Bulwark memantulkan seluruh kartu Poker Trick dan ring Ultimate Harley."], ["Hayabusa", "55.7%", "Mampu mengejar ke posisi topi (Space Escape) dan menghindari ledakan ring."], ["Lancelot", "54.9%", "Skill 2 memberikan efek immune tepat saat cincin api Harley meledak."], ["Eudora", "54.1%", "Menunggu di semak saat Harley kembali ke titik topi awalnya."]], "Beli Radiant Armor / Athena's Shield dan gunakan Winter Crown sebelum ring meledak."],
+            "irithel": ["Menembak Sambil Bergerak • Lemah terhadap assassin & blade armor", [["Belerick", "57.5%", "Memantulkan panah kritikal Irithel saat ia menembak sambil berlari."], ["Saber", "56.4%", "Mengunci Irithel dengan Triple Sweep sebelum sempat kabur."], ["Hayabusa", "55.7%", "Shadow Kill selalu mengikuti pergerakan Irithel."], ["Natalia", "54.9%", "Kebal terhadap panah Irithel di dalam tabir asap."]], "Gunakan Blade Armor dan Dominance Ice."],
+            "grock": ["CC Immune Dekat Tembok & Burst • Lemah terhadap True Damage", [["Karrie", "57.1%", "True Damage menembus bonus Physical Defense pasif Grock."], ["Valir", "56.2%", "Memperlambat dan mengikis HP Grock dari jarak jauh."], ["Lunox", "55.4%", "Damage magis menembus pertahanan fisik tinggi Grock."], ["Dyrroth", "54.6%", "Mengurangi armor Grock secara drastis."]], "Hindari bertarung di lorong sempit dekat tembok."],
+            "argus": ["5 Detik Kebal Kematian • Lemah terhadap CC & kite saat Ultimate", [["Valir", "58.2%", "Mendorong dan memperlambat Argus selama 5 detik durasi Eternal Evil."], ["Franco", "57.0%", "Mengunci Argus dengan Suppress hingga durasi kebalnya habis."], ["Akai", "56.1%", "Menjepit Argus ke tembok selama durasi Ultimate-nya berlangsung."], ["Gatotkaca", "55.3%", "Menahan serangan fisik Argus dan memaksanya membuang waktu Ultimate."]], "Gunakan Dominance Ice dan jangan pukul Argus saat sayap hitamnya menyala."],
+            "odette": ["Area Swan Song & Shield • Sangat mudah digagalkan CC", [["Franco", "58.5%", "Iron Hook langsung membatalkan Swan Song Odette dari jarak jauh."], ["Chou", "57.4%", "Tendangan Chou memutus channeling Ultimate Odette seketika."], ["Kadita", "56.3%", "Menyelam ke tengah Swan Song dan membunuh Odette dalam satu kombo."], ["Guinevere", "55.5%", "Melompat masuk dan menghentikan Ultimate Odette."]], "Gunakan Athena's Shield atau Winter Crown."],
+            "lancelot": ["Multi-Dash & Immune • Lemah terhadap Anti-Dash & Suppress", [["Minsitthar", "58.3%", "King's Calling menghentikan Puncture dan Phantom Execution total."], ["Phoveus", "57.4%", "Setiap dash Puncture Lancelot memicu lompatan Phoveus tanpa henti."], ["Khufra", "56.5%", "Bouncing Ball memblokir seluruh manuver dash Lancelot."], ["Franco", "55.6%", "Suppress mengunci Lancelot saat celah immune Skill 2 selesai."]], "Gunakan Antique Cuirass untuk mengurangi burst fisiknya."],
+            "diggie": ["Anti-CC Mutlak & Vision Bomb • Sangat rapuh di lini belakang", [["Natalia", "57.8%", "Menculik Diggie dengan mudah sebelum teamfight dimulai."], ["Helcurt", "56.9%", "Mengeliminasi Diggie dalam kegelapan sebelum sempat menekan Time Journey."], ["Saber", "56.1%", "Satu kombo Triple Sweep langsung menumbangkan Diggie."], ["Fanny", "55.3%", "Terlalu cepat untuk dihindari oleh Diggie yang tidak punya skill kabur."]], "Pancing Diggie mengeluarkan Time Journey sebelum menginisiasi CC utama."],
+            "hylos": ["HP Raksasa & Ring Slow • Sangat rentan terhadap damage persentase HP", [["Karrie", "59.4%", "True Damage berbasis maksimal HP menghancurkan Hylos tercepat."], ["Valir", "57.6%", "Searing Torrent terus mendorong mundur Hylos yang berjalan maju."], ["Lunox", "56.8%", "Chaos Assault memberikan damage magis persentase HP masif."], ["X.Borg", "55.7%", "True Damage berkelanjutan membakar HP tebal Hylos."]], "Wajib gunakan item Anti-Heal untuk menekan regenerasi Glorious Pathway."],
+            "zhask": ["Nightmaric Spawn & Untargetable • Lemah setelah keluar dari turret", [["Fanny", "56.9%", "Menyerang Zhask setelah ia keluar dari spawn atau berpindah posisi."], ["Lancelot", "56.1%", "Menghindari tembakan laser Zhask dengan mobilitas tinggi."], ["Claude", "55.3%", "Menggunakan spawn Zhask sebagai sumber stack Art of Thievery."], ["Irithel", "54.6%", "Menembak dan menghancurkan spawn Zhask sambil bergerak."]], "Gunakan Radiant Armor untuk meredam laser berkelanjutan Zhask."],
+            "helcurt": ["Global Darkness & Silence • Lemah terhadap CC area & armor", [["Khufra", "57.2%", "Bouncing Ball menghentikan menerjangnya Helcurt di dalam kegelapan."], ["Eudora", "56.3%", "Mengunci Helcurt tepat saat ia muncul di dekat carry tim."], ["Hylos", "55.5%", "Aura Ring of Punishment langsung melukai Helcurt saat mendekat."], ["Franco", "54.8%", "Menjaga carry dengan Suppress saat layar menjadi gelap."]], "Gunakan Antique Cuirass dan tetap berkumpul bersama rekan setim saat gelap."],
+            "pharsa": ["Bombardir Jarak Jauh • Rentan saat posisi Feathered Air Strike", [["Ling", "58.1%", "Melompati dinding langsung ke atas posisi Pharsa saat Ultimate."], ["Fanny", "57.4%", "Terbang cepat ke lini belakang dan membatalkan Ultimate Pharsa."], ["Hayabusa", "56.5%", "Quad Shadow menjangkau Pharsa bahkan saat ia berubah menjadi burung."], ["Kadita", "55.6%", "Menyelam ke posisi Pharsa dengan kekebalan CC."]], "Gunakan Athena's Shield untuk menahan 4 kali serangan Feathered Air Strike."],
+            "lesley": ["True Damage Kritikal & Camouflage • Lemah terhadap burst & reveal", [["Hayabusa", "57.3%", "Shadow Kill membatalkan kamuflase Lesley dan langsung membunuhnya."], ["Saber", "56.4%", "Mengunci Lesley sebelum sempat menembakkan peluru pasif."], ["Rafaela", "55.5%", "Membuka mode kamuflase Lesley secara instan dengan Skill 1."], ["Natalia", "54.8%", "Kebal terhadap tembakan pasif Lesley di dalam tabir asap."]], "Gunakan Twilight Armor untuk membatasi burst True Damage Lesley."],
+            "jawhead": ["Ejector Lempar & Burst Single • Lemah terhadap anti-CC & mobile", [["Diggie", "57.6%", "Time Journey membatalkan efek lemparan Ejector Jawhead."], ["Valir", "56.5%", "Mendorong Jawhead menjauh saat ia berlari mengejar target."], ["Lancelot", "55.7%", "Menghindari lemparan Ejector dan rentetan misil Jawhead."], ["Karrie", "54.9%", "Menghancurkan Jawhead yang bertipe bruiser di garis depan."]], "Gunakan Antique Cuirass atau Purify."],
+            "angela": ["Global Shield & Heal • Membutuhkan inang yang kuat", [["Baxia", "58.0%", "Memotong pemulihan HP Heartguard dan Love Waves secara drastis."], ["Esmeralda", "57.1%", "Menyerap shield tebal yang diberikan Ultimate Angela ke musuh."], ["Natalia", "56.2%", "Menculik tubuh asli Angela saat berada sendirian di lane."], ["Kaja", "55.3%", "Menarik target yang dirasuki Angela keluar dari pertarungan."]], "Wajib beli item Anti-Heal sejak early-mid game."],
+            "gusion": ["Kombo 10 Dagger Burst • Sangat ter-counter oleh Magic Defense & Stun", [["Eudora", "57.5%", "Target-lock stun membunuh Gusion tepat saat ia meluncur masuk."], ["Khufra", "56.6%", "Bouncing Ball memblokir dash Shadowblade Slaughter Gusion."], ["Ruby", "55.8%", "CC singkat beruntun mengacaukan arah tarikan dagger Gusion."], ["Lolita", "55.0%", "Perisai Lolita memblokir lemparan 10 belati Gusion."]], "Gunakan Athena's Shield atau Winter Crown saat Gusion menandai Anda."],
+            "valir": ["Anti-Melee Knockback & Purify • Lemah terhadap assassin jarak jauh", [["Lancelot", "57.4%", "Thorned Rose menghindari dorongan Searing Torrent dan langsung mendekat."], ["Ling", "56.5%", "Menyerang Valir dari atas tembok tanpa bisa didorong mundur."], ["Fanny", "55.8%", "Kecepatan kabel melampaui jangkauan dorongan api Valir."], ["Hayabusa", "55.0%", "Berpindah lewat bayangan langsung ke belakang Valir."]], "Gunakan Radiant Armor untuk menahan damage bakar berkelanjutan Valir."],
+            "martis": ["CC Immune Ashura Aura & Reset Execute • Lemah di late game", [["Phoveus", "57.3%", "Setiap dash Mortal Coil Martis memicu lompatan Phoveus."], ["Minsitthar", "56.4%", "Menghentikan rangkaian dash Mortal Coil di dalam arena Ultimate."], ["Franco", "55.6%", "Suppress menembus efek kebal CC milik Mortal Coil Martis."], ["Kaja", "54.8%", "Menarik Martis sebelum ia mendapatkan reset eksekusi Decimation."]], "Gunakan Antique Cuirass dan hindari memberi kill saat darah rendah."],
+            "uranus": ["Regen HP Tanpa Henti • Tidak punya CC & lemah terhadap Anti-Heal", [["Karrie", "58.8%", "True Damage menembus regenerasi dan HP tebal Uranus dengan cepat."], ["Baxia", "57.6%", "Memotong regenerasi stack Radiance Uranus secara alami."], ["Dyrroth", "56.5%", "Mengurangi armor Uranus 75% dan mendominasi EXP Lane."], ["Esmeralda", "55.7%", "Menyerap shield dari Ionic Edge Uranus tanpa henti."]], "Wajib beli item Anti-Heal dan abaikan Uranus jika tidak bisa langsung membunuhnya."],
+            "hanabi": ["Bounce Attack & Shield Anti-CC • Minim mobilitas kabur", [["Esmeralda", "58.2%", "Menyerap shield pasif Hanabi sehingga efek kebal CC-nya hilang."], ["Hayabusa", "57.1%", "Menyergap Hanabi di lini belakang dengan mudah."], ["Saber", "56.3%", "Triple Sweep tetap mengangkat Hanabi meski memiliki shield."], ["Belerick", "55.4%", "Memantulkan pantulan kelopak serangan Hanabi kembali padanya."]], "Gunakan Blade Armor & Dominance Ice."],
+            "chang'e": ["Meteor Shower & Shield Speed • Sangat mudah di-counter Lolita", [["Lolita", "61.5%", "Guardian's Bulwark memantulkan seluruh hujan meteor Ultimate Chang'e."], ["Baxia", "56.8%", "Tahan terhadap hujan meteor dengan Radiant Armor dan mengejar Chang'e."], ["Hayabusa", "56.0%", "Menyergap Chang'e saat ia menembakkan Ultimate ke satu arah."], ["Ling", "55.2%", "Menyerang dari samping atau belakang saat Chang'e channeling."]], "Wajib beli Radiant Armor."],
+            "kaja": ["Divine Judgment Suppress • Jarak tarik pendek tanpa Flicker", [["Diggie", "56.8%", "Menetralkan efek slow dan bom Kaja (meski Suppress tetap berjalan)."], ["Valentina", "56.0%", "Bisa meniru Divine Judgment untuk menarik balik Kaja/core musuh."], ["Valir", "55.2%", "Mendorong Kaja menjauh sebelum sempat menyentuh carry tim."], ["Chou", "54.5%", "Menendang Kaja terlebih dahulu sebelum ia mendekat."]], "Gunakan Athena's Shield dan jaga posisi saat Flicker Kaja sedang aktif."],
+            "selena": ["Abyssal Arrow Stun Lama • Lemah terhadap Purify & Dive", [["Diggie", "58.4%", "Time Journey langsung menghapus efek stun panah lele Selena."], ["Kagura", "57.1%", "Rasho Umbrella Flee membebaskan Kagura dari stun Selena."], ["Lancelot", "56.2%", "Skill 2 dapat menangkis panah Selena dengan mudah."], ["Wanwan", "55.4%", "Skill 2 langsung menghilangkan stun Abyssal Arrow."]], "Gunakan Athena's Shield dan Tough Boots."],
+            "aldous": ["One-Punch Late Game Stack • Sangat lemah di early & anti-basic attack", [["Natalia", "59.0%", "Tabir asap membuat pukulan stack Aldous meleset total."], ["Karina", "57.8%", "Dance of Blades memblokir pukulan Soul Steal Aldous sepenuhnya."], ["Chou", "56.5%", "Menendang Aldous menjauh tepat saat ia meluncur dengan Ultimate."], ["Franco", "55.7%", "Mengunci Aldous dengan Suppress begitu ia mendarat."]], "Gunakan Wind of Nature (MM), Winter Crown (Mage), atau Twilight Armor."],
+            "claude": ["Blazing Duet Area & Mobilitas Tinggi • Lemah terhadap Hard CC & Duri", [["Belerick", "58.7%", "Pasif duri memantulkan ratusan peluru Blazing Duet ke tubuh Claude."], ["Lesley", "57.2%", "True Damage jarak jauh mendominasi Claude di fase laning Gold Lane."], ["Saber", "56.3%", "Mengunci Claude di tengah Ultimate Blazing Duet-nya."], ["Kaja", "55.5%", "Menarik Claude sebelum ia sempat berpindah kembali ke bayangan."]], "Gunakan Blade Armor & Dominance Ice."],
+            "vale": ["Windstorm Burst Area • Tanpa mobilitas & sangat rapuh", [["Lancelot", "57.2%", "Menghindari tornado dan badai Vale dengan Thorned Rose."], ["Hayabusa", "56.4%", "Menyergap Vale di lini belakang sebelum sempat mengeluarkan kombo."], ["Fanny", "55.7%", "Kecepatan kabel menyulitkan Vale mendaratkan angin pengangkat."], ["Helcurt", "55.0%", "Silence menghentikan kombo burst Vale total."]], "Gunakan Athena's Shield."],
+            "leomord": ["Barbiel Mounted Berserker • Lemah sebelum menunggang kuda & CC", [["Valir", "57.1%", "Mendorong mundur kuda Barbiel agar Leomord gagal menebas carry."], ["Franco", "56.3%", "Suppress menghentikan amukan Leomord saat menunggang kuda."], ["Akai", "55.5%", "Menjepit kuda Leomord ke tembok selama durasi Ultimate-nya."], ["Karrie", "54.8%", "True Damage melelehkan HP Leomord saat maju ke garis depan."]], "Gunakan Antique Cuirass & Dominance Ice."],
+            "lunox": ["Chaos Burst & Brilliance Immune • Jarak serang menengah", [["Franco", "57.0%", "Mengunci Lunox dengan Suppress sebelum ia menekan Order Brilliance."], ["Saber", "56.2%", "Triple Sweep membunuh Lunox secara instan sebelum sempat berubah kuning."], ["Fanny", "55.4%", "Terlalu cepat untuk dikejar oleh rentetan Chaos Assault Lunox."], ["Hayabusa", "54.7%", "Memancing keluar Ultimate kuning Lunox lalu menghabisinya."]], "Gunakan Radiant Armor untuk menahan rentetan Chaos Assault."],
+            "hanzo": ["Demon Pneuma Ghost • Tubuh asli tidak berdaya di belakang", [["Natalia", "59.5%", "Mencari dan membunuh tubuh asli Hanzo yang diam di semak."], ["Fanny", "58.2%", "Terbang langsung ke posisi tubuh asli Hanzo di balik tembok."], ["Ling", "57.4%", "Melompati tembok menuju tubuh asli Hanzo dengan sangat cepat."], ["Hayabusa", "56.5%", "Menelusuri tali bayangan menuju tubuh utama Hanzo."]], "Incar tubuh asli Hanzo atau hancurkan darah iblisnya dengan cepat."],
+            "belerick": ["Pasif Duri & Area Taunt • Lemah terhadap True Damage & Anti-Heal", [["Karrie", "58.1%", "True Damage menghancurkan HP raksasa Belerick dengan cepat."], ["Valir", "56.9%", "Mendorong mundur Belerick sebelum sempat mendaratkan Taunt."], ["Lunox", "56.0%", "Damage magis persentase HP efektif melawan Belerick."], ["X.Borg", "55.2%", "True Damage konstan mengikis darah Belerick dari jarak aman."]], "Gunakan Radiant Armor & item Anti-Heal."],
+            "kimmy": ["Hybrid Magic-Physical DPS • Lemah terhadap perisai & dive", [["Lolita", "58.9%", "Guardian's Bulwark memantulkan seluruh tembakan peluru dan Ultimate Kimmy."], ["Hayabusa", "57.2%", "Menyergap Kimmy di lini belakang dengan sangat mudah."], ["Belerick", "56.1%", "Pasif duri terus aktif terkena rentetan tembakan Kimmy."], ["Saber", "55.3%", "Mengunci Kimmy yang tidak memiliki skill kabur mumpuni."]], "Gunakan Radiant Armor & Blade Armor."],
+            "thamuz": ["True Damage Scythe & Regen Ult • Lemah terhadap Anti-Heal & Kite", [["Valir", "58.0%", "Searing Torrent terus mendorong Thamuz agar tidak bisa menempel."], ["Baxia", "57.1%", "Memotong pemulihan HP Cauterant Inferno Thamuz secara drastis."], ["Karrie", "56.2%", "Menang duel True Damage dan memperlambat pergerakan Thamuz."], ["X.Borg", "55.4%", "Unggul jangkauan api dan True Damage di EXP Lane."]], "Wajib beli item Anti-Heal & Dominance Ice."],
+            "harith": ["Unlimited Dash & Shield • Sangat ter-counter oleh Anti-Dash", [["Minsitthar", "59.3%", "King's Calling menghentikan seluruh Chrono Dash Harith di dalam arena."], ["Phoveus", "58.4%", "Setiap dash Zaman Force Harith memicu lompatan Phoveus tanpa henti."], ["Esmeralda", "57.2%", "Menyerap shield terus-menerus yang dihasilkan oleh Chrono Dash Harith."], ["Khufra", "56.1%", "Bouncing Ball memblokir dash Harith dan memberikan efek airborne."]], "Gunakan Radiant Armor & Dominance Ice."],
+            "minsitthar": ["Anti-Dash Arena & Hook • Lemah terhadap hero tanpa dash & poke", [["Valir", "56.9%", "Mendorong Minsitthar keluar dari arenanya sendiri."], ["Pharsa", "56.1%", "Membombardir Minsitthar dari luar lingkaran King's Calling."], ["Ixia", "55.3%", "Menembak dari jarak jauh tanpa bergantung pada skill dash."], ["Diggie", "54.6%", "Membebaskan rekan setim dari efek slow dan tarikan tombak."]], "Hindari bertarung di dalam lingkaran Ultimate Minsitthar."],
+            "kadita": ["Ocean Oddity Burst & Immune • Lemah setelah kombo keluar", [["Kaja", "56.8%", "Menarik Kadita sebelum ia sempat menyelam ke dalam tanah."], ["Franco", "56.0%", "Suppress menghentikan kombo gelombang Kadita secara mutlak."], ["Diggie", "55.2%", "Time Journey menyelamatkan tim dari knock-up Breath of the Ocean."], ["Eudora", "54.5%", "Mengunci Kadita tepat saat ia muncul ke permukaan."]], "Gunakan Athena's Shield atau Winter Crown."],
+            "faramis": ["Cult Altar Extra HP Bar • Lemah terhadap burst cepat & pemisah tim", [["Valentina", "57.6%", "Meniru Cult Altar Faramis untuk memberikan nyawa kedua ke tim sendiri."], ["Luo Yi", "56.5%", "Menghukum formasi tim musuh yang berkumpul di dalam lingkaran Cult Altar."], ["Tigreal", "55.7%", "Mendorong dan mengumpulkan musuh hingga durasi Cult Altar habis."], ["Akai", "54.9%", "Memisahkan musuh keluar dari jangkauan altar Faramis."]], "Pancing Cult Altar keluar terlebih dahulu sebelum mengeluarkan skill burst utama."],
+            "badang": ["Fist Wind Wall-Pin • Sangat mudah digagalkan efek anti-CC", [["Diggie", "58.7%", "Time Journey langsung membebaskan tim dari pukulan bertubi-tubi Badang."], ["Benedetta", "57.1%", "An Eye for An Eye memantulkan stun tembok Badang balik kepadanya."], ["Chou", "56.2%", "Shunpo menembus tembok buatan Badang dengan mudah."], ["Valir", "55.4%", "Mendorong Badang menjauh saat ia mengaktifkan Fist Crack."]], "Gunakan Purify atau Antique Cuirass."],
+            "khufra": ["Anti-Dash Bouncing Ball • Lemah terhadap True Damage & Anti-CC", [["Diggie", "58.5%", "Time Journey membatalkan seluruh efek airborne dan stun tembok Khufra."], ["Karrie", "57.3%", "True Damage menghancurkan HP tebal Khufra dengan cepat."], ["Valir", "56.2%", "Menggagalkan lompatan Tyrant's Revenge Khufra di tengah udara."], ["Minsitthar", "55.4%", "Mengunci skill lompatan Tyrant's Revenge di dalam arena."]], "Gunakan Purify atau Tough Boots."],
+            "granger": ["Burst Rhapsody & Sonata • Lemah terhadap assassin & perisai", [["Lolita", "58.6%", "Guardian's Bulwark memantulkan seluruh peluru Rhapsody dan meriam Granger."], ["Hayabusa", "57.1%", "Menyergap Granger dengan mudah dan menghindari tembakannya."], ["Ling", "56.3%", "Melompati tembok langsung ke arah Granger di lini belakang."], ["Saber", "55.4%", "Mengunci Granger sebelum ia sempat meluncur kabur."]], "Gunakan Antique Cuirass & Blade Armor."],
+            "guinevere": ["Spatial Migration Knock-Up • Sangat mudah digagalkan anti-CC", [["Diggie", "59.0%", "Time Journey langsung membatalkan Violet Requiem Guinevere."], ["Wanwan", "57.4%", "Langsung melepaskan diri dari lompatan Guinevere dengan Skill 2."], ["Helcurt", "56.3%", "Silence mencegah Guinevere menekan Ultimate setelah melompat."], ["Benedetta", "55.5%", "Menangkis lompatan Guinevere dengan An Eye for An Eye."]], "Gunakan Athena's Shield & Purify."],
+            "esmeralda": ["Shield Stealer & Frostmoon • Lemah terhadap Burst & Anti-Heal", [["Dyrroth", "58.4%", "Mengurangi armor Esmeralda 75% dan membunuhnya sebelum shield menumpuk."], ["Karrie", "57.2%", "True Damage menembus bar shield putih Esmeralda secara langsung."], ["Baxia", "56.3%", "Memotong regenerasi dan perolehan shield Esmeralda secara drastis."], ["Thamuz", "55.5%", "Unggul duel jarak dekat dengan True Damage konstan."]], "Wajib beli item Anti-Heal (Sea Halberd / Dominance Ice / Glowing Wand)."],
+            "terizla": ["Heavy Hammer Damage Reduction • Gerakan lambat & mudah di-kite", [["Valir", "58.3%", "Searing Torrent terus mendorong Terizla agar gagal mendaratkan ayunan palu."], ["Karrie", "57.1%", "True Damage menembus pasif pengurangan damage Terizla."], ["X.Borg", "56.2%", "True Damage dan jangkauan api mendominasi Terizla di EXP Lane."], ["Diggie", "55.4%", "Membatalkan rantai penarik Penalty Zone Terizla."]], "Gunakan item Anti-Heal dan hindari ayunan palu ke-3."],
+            "x-borg": ["Firaga Armor & True Damage • Rapuh saat armor api terlepas", [["Paquito", "57.6%", "Kombo burst cepat langsung menghancurkan Firaga Armor X.Borg."], ["Dyrroth", "56.7%", "Burst dan pengurangan armor memecahkan baju zirah X.Borg dalam sekejap."], ["Gusion", "55.9%", "Satu kombo belati langsung melepaskan armor X.Borg."], ["Esmeralda", "55.1%", "Cepat mengikis shield armor X.Borg dan mengejarnya saat tanpa armor."]], "Hancurkan Firaga Armor terlebih dahulu lalu habisi sebelum energinya penuh."],
+            "ling": ["Wall-Hopping & Tempest of Blades • Wajib dikunci Anti-Dash & Suppress", [["Minsitthar", "57.6%", "Area Ultimate membuat Ling tidak bisa menggunakan Finch Poise maupun Tempest of Blades."], ["Kaja", "56.3%", "Divine Judgment menarik Ling keluar dari posisi aman tanpa bisa di-purify."], ["Khufra", "55.4%", "Menghentikan dash Ling saat turun dari tembok untuk mengambil pedang."], ["Ruby", "54.1%", "CC singkat beruntun mengganggu ritme pengambilan pedang Ultimate Ling."]], "Gunakan Wind of Nature (Marksman) atau Winter Crown (Mage) saat Ling turun dari Ultimate."],
+            "dyrroth": ["75% Armor Break & Burst Duel • Rapuh terhadap CC & Anti-Heal", [["Argus", "57.5%", "Eternal Evil menahan seluruh burst Abysm Strike dan membalikkan duel."], ["Ruby", "56.4%", "CC beruntun memutus kombo Dyrroth dan mengunggulinya di teamfight."], ["Guinevere", "55.6%", "Mengangkat Dyrroth ke udara sebelum ia sempat melepaskan Ultimate."], ["Saber", "54.8%", "Mengunci Dyrroth yang berdarah tipis di tengah pertarungan."]], "Gunakan Antique Cuirass & item Anti-Heal."],
+            "lylia": ["Black Shoes Time Rewind & Area Slow • Lemah terhadap Hard CC", [["Franco", "57.4%", "Suppress mencegah Lylia menekan Black Shoes untuk memulihkan HP."], ["Kaja", "56.5%", "Menarik Lylia dan membunuhnya sebelum sempat kembali ke sepatu."], ["Saber", "55.7%", "Triple Sweep langsung menghabisi Lylia sebelum ia menekan Ultimate."], ["Hayabusa", "54.9%", "Mampu mengejar Lylia bahkan setelah ia kembali ke posisi sepatu."]], "Gunakan Radiant Armor untuk meredam ledakan Gloom berkelanjutan."],
+            "baxia": ["Anti-Heal Berjalan & Rolling Tank • Lemah terhadap True Damage", [["Karrie", "57.9%", "True Damage menembus pertahanan pasif Baxia dengan mudah."], ["Valir", "56.8%", "Menghentikan gelindingan Baxia Shield Unity di tengah jalan."], ["Lunox", "55.9%", "Damage magis berbasis HP melelehkan Baxia dengan cepat."], ["Diggie", "55.1%", "Membatalkan efek stun tabrakan roda Baxia."]], "Gunakan Radiant Armor atau Divine Glaive."],
+            "masha": ["3 HP Bar & Burst Anti-Tank • Lemah terhadap CC & Anti-Attack Speed", [["Belerick", "57.8%", "Memantulkan cakaran cepat Masha dan menguncinya dengan Taunt."], ["Franco", "56.7%", "Suppress menghentikan Masha saat menerjang masuk ke lini belakang."], ["Dominance/Natalia", "55.8%", "Natalia kebal terhadap basic attack Masha di dalam tabir asap."], ["Minsitthar", "55.0%", "Mengunci terjangan Ultimate Masha di dalam arena."]], "Gunakan Dominance Ice & Blade Armor."],
+            "wanwan": ["Weakness Marks & Untargetable Crossbow • Lemah terhadap Anti-Dash", [["Phoveus", "59.5%", "Setiap lompatan kecil Wanwan terus memicu lompatan Phoveus."], ["Khufra", "58.1%", "Bouncing Ball memblokir lompatan pasif Wanwan sehingga sulit membuka Ultimate."], ["Minsitthar", "57.0%", "King's Calling menghentikan lompatan Wanwan total."], ["Franco", "56.1%", "Suppress tidak dapat dilepaskan oleh Needles in Flowers Wanwan."]], "Gunakan Winter Crown untuk membatalkan Crossbow of Tang saat aktif."],
+            "silvanna": ["Imperial Justice Lockdown • Sangat mudah dibatalkan oleh CC", [["Diggie", "58.6%", "Time Journey langsung membebaskan rekan setim dari kurungan Silvanna."], ["Akai", "57.3%", "Heavy Spin mendorong Silvanna keluar dari lingkaran Ultimatenya sendiri."], ["Kadita", "56.4%", "Menyelam dan membatalkan putaran Spiral Strangling Silvanna."], ["Valir", "55.5%", "Mendorong Silvanna menjauh saat ia mencoba mengunci target."]], "Gunakan Purify atau Radiant Armor."],
+            "cecilion": ["Infinite Late Game Stacks • Sangat rapuh di jarak dekat", [["Helcurt", "58.2%", "Menerjang masuk ke jarak dekat tempat serangan Bat Impact Cecilion tidak mengenai musuh."], ["Fanny", "57.4%", "Terbang langsung menempel ke tubuh Cecilion di lini belakang."], ["Ling", "56.5%", "Melompati tembok dan menempel tepat di sebelah Cecilion."], ["Lancelot", "55.7%", "Mendekat dalam sekejap dan menghabisi Cecilion sebelum sempat menekan Bats Feast."]], "Gunakan Athena's Shield & item Anti-Heal."],
+            "carmilla": ["Curse of Blood Link & Sustain • Lemah terhadap Anti-CC & Jarak Jauh", [["Diggie", "58.9%", "Time Journey memutus rantai kutukan Curse of Blood yang menghubungkan tim."], ["Karrie", "57.1%", "True Damage menghancurkan pertahanan fisik/magis yang dicuri Carmilla."], ["Valir", "56.2%", "Mendorong Carmilla menjauh agar tidak bisa menyedot darah dengan Crimson Flower."], ["Baxia", "55.4%", "Memotong pemulihan HP Carmilla di tengah kerumunan."]], "Jaga jarak antar anggota tim saat terkena Ultimate Carmilla."],
+            "atlas": ["Fatal Links Area Slam • Sangat mudah digagalkan anti-CC", [["Diggie", "61.2%", "Time Journey membatalkan tarikan rantai Fatal Links Atlas sepenuhnya."], ["Valir", "57.8%", "Mendorong Atlas menjauh saat ia meluncur dalam mode Perfect Match."], ["Chou", "56.5%", "Menendang Atlas sebelum ia sempat membanting tim."], ["Wanwan", "55.6%", "Langsung lepas dari rantai Atlas menggunakan Skill 2."]], "Gunakan Purify & menyebar saat Atlas mengaktifkan Perfect Match."],
+            "popol-and-kupa": ["2v1 Lane Pressure & Trap • Sangat bergantung pada HP Kupa", [["Esmeralda", "57.4%", "Menyerap shield Popol dan mengenai Popol sekaligus Kupa secara bersamaan."], ["Lancelot", "56.5%", "Menembus Kupa langsung ke arah Popol yang berdarah tipis."], ["Hayabusa", "55.7%", "Shadow Kill melompati Kupa dan langsung mengeksekusi Popol."], ["Aurora", "54.9%", "Membekukan Popol dan Kupa secara bersamaan di area luas."]], "Gunakan Antique Cuirass & fokuskan serangan ke Popol saat Kupa tumbang."],
+            "yu-zhong": ["Black Dragon & Sha Residue • Lemah terhadap Anti-Heal & True Damage", [["Karrie", "57.8%", "True Damage menghancurkan Yu Zhong saat berubah menjadi naga besar."], ["Baxia", "56.9%", "Memotong pemulihan HP dari pasif Sha Residue secara drastis."], ["Dyrroth", "56.0%", "Menang duel jarak dekat di EXP Lane melawan Yu Zhong."], ["Valir", "55.2%", "Mendorong Yu Zhong menjauh setelah ia mendarat dari wujud naga."]], "Wajib beli item Anti-Heal (Sea Halberd / Dominance Ice / Glowing Wand)."],
+            "luo-yi": ["Yin-Yang Reaction & Teleport • Rentan terhadap assassin tunggal", [["Hayabusa", "57.3%", "Menyergap Luo Yi sendirian tanpa memicu reaksi tarik Yin-Yang."], ["Lancelot", "56.4%", "Menghindari ledakan reaksi Yin-Yang dengan immune Skill 2."], ["Fanny", "55.6%", "Terlalu cepat untuk ditangkap oleh lingkaran Dispersion Luo Yi."], ["Helcurt", "54.9%", "Silence memutus kombo Yin-Yang Luo Yi sebelum sempat aktif."]], "Gunakan Athena's Shield & hindari berdiri berdekatan dengan warna tanda berlawanan."],
+            "benedetta": ["Dash Tanpa Henti & Eye for An Eye • Lemah terhadap Anti-Dash", [["Minsitthar", "58.8%", "King's Calling mematikan seluruh pasif pedang dash Benedetta."], ["Phoveus", "57.9%", "Setiap gerakan dash Benedetta memicu lompatan Phoveus tanpa henti."], ["Khufra", "56.7%", "Bouncing Ball menghentikan luncuran Benedetta di teamfight."], ["Franco", "55.8%", "Suppress mengunci Benedetta saat An Eye for An Eye sedang cooldown."]], "Gunakan Antique Cuirass untuk mengurangi damage tebasan Alecto: Final Blow."],
+            "khaleed": ["Sandstorm Regen & Burst Early • Sangat mudah dibatalkan CC saat regen", [["Franco", "57.8%", "Iron Hook langsung membatalkan Quicksand Guard (Skill 2) Khaleed."], ["Valir", "56.9%", "Searing Torrent memutus regenerasi pasir Khaleed dari jarak aman."], ["Chou", "56.0%", "Menendang Khaleed tepat saat ia sedang memulihkan HP."], ["Esmeralda", "55.2%", "Menyerap shield dari Raging Sandstorm Khaleed."]], "Simpan skill CC untuk membatalkan Quicksand Guard Khaleed & beli Anti-Heal."],
+            "barats": ["Detona Giant Stack & Swallow • Gerakan lambat & rentan True Damage", [["Karrie", "58.7%", "True Damage melelehkan tubuh raksasa Barats dalam hitungan detik."], ["Valir", "57.5%", "Mendorong mundur Detona agar gagal menelan target."], ["Lunox", "56.4%", "Damage magis berbasis HP menghancurkan ketebalan darah Barats."], ["X.Borg", "55.6%", "True Damage berkelanjutan sangat efektif mengenai tubuh besar Barats."]], "Gunakan item Anti-Heal & Divine Glaive / Malefic Roar."],
+            "brody": ["High Burst Damage & Kiting • Attack speed lambat", [["Hayabusa", "57.2%", "Menyergap Brody dengan cepat sebelum ia sempat menumpuk 4 stack."], ["Natalia", "56.3%", "Kebal terhadap tembakan berat Brody di dalam tabir asap."], ["Lolita", "55.5%", "Memblokir peluru dan Ultimate Torn-Apart Memory Brody."], ["Saber", "54.8%", "Mengunci Brody secara instan sebelum ia melompat mundur."]], "Gunakan Antique Cuirass untuk mengurangi burst dari Torn-Apart Memory."],
+            "yve": ["Real World Manipulation Kotak • Diam di tempat saat Ultimate", [["Ling", "58.0%", "Melompati tembok langsung ke atas papan catur Yve dan membunuhnya."], ["Fanny", "57.3%", "Terbang menembus area slow Yve langsung ke posisinya."], ["Kadita", "56.4%", "Menyelam dengan immune CC ke tengah papan catur Yve."], ["Hayabusa", "55.6%", "Quad Shadow menjangkau Yve di dalam kotaknya dengan mudah."]], "Gunakan Radiant Armor untuk menahan rentetan tap serangan Yve."],
+            "mathilda": ["Circling Eagle & Guiding Wind • Lemah terhadap Anti-Dash & Lock", [["Minsitthar", "58.2%", "King's Calling menghentikan terbangnya Mathilda dan rekan yang ditariknya."], ["Phoveus", "57.4%", "Menghukum seluruh tim lawan yang menggunakan dash Guiding Wind Mathilda."], ["Khufra", "56.3%", "Bouncing Ball memblokir luncuran Circling Eagle Mathilda."], ["Esmeralda", "55.5%", "Menyerap shield yang diberikan Mathilda kepada rekan-rekannya."]], "Gunakan Athena's Shield atau Radiant Armor."],
+            "paquito": ["Champ Stance Combo Burst • Lemah terhadap Anti-Dash & CC", [["Minsitthar", "57.8%", "King's Calling mengunci seluruh kombo dash Jab dan Knockout Strike Paquito."], ["Phoveus", "56.9%", "Setiap dash kombo Paquito memicu lompatan Phoveus."], ["Esmeralda", "56.0%", "Menyerap shield beruntun yang dihasilkan pasif Champ Stance Paquito."], ["Franco", "55.2%", "Suppress menghentikan rentetan pukulan Paquito."]], "Gunakan Antique Cuirass untuk mengurangi burst fisik Paquito."],
+            "gloo": ["Buff Sustain & Regen • Langganan Ban 2026", [["Faramis", "61.2%", "Skill 2 memantul ke seluruh pecahan Goo, menghasilkan burst damage masif."], ["Vexana", "59.5%", "Pasif ledakan Vexana aktif beruntun saat pecahan Gloo tereliminasi."], ["Valentina", "55.0%", "Bisa meniru Ultimate Gloo untuk menempel balik dan mencuri sustain-nya."], ["Alpha", "54.3%", "True Damage beruntun dan spell vamp deras saat mengenai banyak pecahan Goo."]], "Wajib beli item Anti-Heal (Glowing Wand / Sea Halberd / Dominance Ice) sejak early-mid game."],
+            "beatrix": ["4 Senjata Fleksibel & Burst • Tanpa CC & rentan terhadap dive", [["Hayabusa", "57.1%", "Menyergap Beatrix di lini belakang sebelum sempat berganti senjata."], ["Natalia", "56.3%", "Kebal terhadap tembakan Nibiru/Renner Beatrix di dalam tabir asap."], ["Lolita", "55.5%", "Guardian's Bulwark memantulkan seluruh peluru senjata Beatrix."], ["Saber", "54.8%", "Mengunci Beatrix dengan cepat di tengah pertarungan."]], "Gunakan Blade Armor & Antique Cuirass."],
+            "phoveus": ["Anti-Dash Bruiser • Sangat lemah melawan hero tanpa dash", [["Esmeralda", "57.8%", "Menyerap shield tebal Phoveus dan mengalahkannya tanpa perlu skill dash."], ["Valir", "56.9%", "Mendorong Phoveus menjauh tanpa memicu pasif anti-dash miliknya."], ["X.Borg", "56.0%", "Mengikis HP Phoveus dengan True Damage dari jarak aman tanpa dash."], ["Karrie", "55.2%", "True Damage menghancurkan Phoveus di garis depan."]], "Hindari menggunakan skill dash saat tanda mata Phoveus aktif di atas kepala."],
+            "natan": ["Reverse-Clone Magic DPS • Lemah terhadap burst & pantulan proyektil", [["Lolita", "58.5%", "Guardian's Bulwark memantulkan seluruh proyektil bolak-balik Natan."], ["Saber", "57.0%", "Mengunci Natan sebelum ia sempat menumpuk stack attack speed."], ["Hayabusa", "56.1%", "Menyergap Natan di lini belakang dengan cepat."], ["Belerick", "55.3%", "Memantulkan serangan cepat Natan dan kloningnya."]], "Gunakan Radiant Armor & Dominance Ice."],
+            "aulus": ["Late Game Axe Cleave • Sangat lemah di early game sebelum level 12", [["Fanny", "58.2%", "Menginvasi jungle Aulus sejak menit awal sehingga ia tidak pernah mencapai level 12."], ["Valir", "57.0%", "Mendorong Aulus menjauh saat ia berlari mendekat untuk mengayunkan kapak."], ["Belerick", "56.1%", "Taunt & duri memantulkan tebasan cepat Aulus."], ["Hilda", "55.3%", "Mengganggu farm early game Aulus tanpa ampun."]], "Gunakan Dominance Ice & Blade Armor."],
+            "aamon": ["Camouflage & Shard Burst • Lemah terhadap Radiant Armor & Reveal", [["Rafaela", "57.4%", "Light of Retribution membatalkan kamuflase Aamon secara otomatis."], ["Eudora", "56.3%", "Mengunci Aamon begitu ia muncul untuk melempar pecahan belati."], ["Saber", "55.5%", "Pedang berputar membuka penyamaran Aamon dan langsung menguncinya."], ["Hylos", "54.8%", "Aura Ring of Punishment langsung memunculkan Aamon saat mendekat."]], "Wajib beli Radiant Armor atau Athena's Shield."],
+            "valentina": ["Copy Ultimate & Sustain • Lemah terhadap burst & anti-heal", [["Helcurt", "57.0%", "Silence mencegah Valentina mencuri maupun menggunakan Ultimate hasil tiruan."], ["Baxia", "56.1%", "Memotong pemulihan HP dari pasif Valentina secara drastis."], ["Fanny", "55.3%", "Terlalu cepat untuk ditangkap oleh Shadow Strike Valentina."], ["Saber", "54.6%", "Mengunci Valentina sebelum ia sempat menekan I Am You."]], "Gunakan Radiant Armor & item Anti-Heal."],
+            "edith": ["Tank to Marksman Wrath Burst • Sangat rapuh saat berubah mode MM", [["Lolita", "58.3%", "Guardian's Bulwark memantulkan seluruh tembakan petir mode Marksman Edith."], ["Saber", "57.1%", "Mengunci Edith tepat saat ia berubah menjadi Marksman berdarah tipis."], ["Hayabusa", "56.2%", "Menyerang Edith saat ia melompat keluar dari robot Phylax."], ["Belerick", "55.4%", "Memantulkan serangan cepat mode Marksman Edith."]], "Gunakan Radiant Armor (karena damage mode MM Edith bertipe Magic) & Dominance Ice."],
+            "floryn": ["Global Heal & Anti-Anti-Heal • Sangat rapuh di lini belakang", [["Natalia", "57.9%", "Menculik Floryn di lini belakang dengan sangat cepat."], ["Saber", "56.8%", "Satu kombo Triple Sweep langsung menumbangkan Floryn."], ["Helcurt", "56.0%", "Mengeliminasi Floryn di dalam kegelapan sebelum sempat menekan Bloom."], ["Hayabusa", "55.2%", "Menyergap Floryn yang tidak memiliki skill kabur."]], "Incar Floryn terlebih dahulu dan tetap gunakan item Anti-Heal."],
+            "yin": ["My Turn 1v1 Domain • Sangat mudah dikalahkan di dalam arenanya sendiri", [["Argus", "59.8%", "Eternal Evil membuat Argus kebal di dalam domain Yin dan membunuhnya balik."], ["Valir", "58.1%", "Mendorong Lieh menjauh selama durasi domain 8 detik hingga habis."], ["Wanwan", "57.2%", "Langsung lepas dari stun Yin dan membalas dengan Crossbow of Tang."], ["Ruby", "56.3%", "CC beruntun membuang seluruh durasi domain Yin."]], "Gunakan Winter Crown atau Wind of Nature di dalam domain Yin."],
+            "melissa": ["Go Away! Anti-Melee Dome & Muddles • Lemah terhadap serangan jarak jauh", [["Pharsa", "57.8%", "Membombardir Melissa dari luar lingkaran kubah pelindungnya."], ["Lesley", "56.9%", "Menembak Melissa dari jarak jauh tanpa perlu menembus kubahnya."], ["Belerick", "56.0%", "Memantulkan tusukan boneka Muddles kembali ke tubuh Melissa."], ["Lolita", "55.2%", "Memblokir lemparan jarum Melissa dengan perisai."]], "Gunakan Blade Armor & Dominance Ice."],
+            "xavier": ["Infinite Transcendence & Global Laser • Minim mobilitas kabur", [["Ling", "57.9%", "Melompati tembok langsung ke posisi Xavier di garis belakang."], ["Fanny", "57.2%", "Terbang menembus garis depan dan mengeksekusi Xavier."], ["Hayabusa", "56.3%", "Quad Shadow menjangkau Xavier dengan sangat mudah."], ["Lancelot", "55.5%", "Menghindari garis immobilize Xavier dengan mobilitas tinggi."]], "Gunakan Athena's Shield."],
+            "julian": ["Enhanced Skill Combo & Lifesteal • Lemah terhadap Hard CC & Anti-Heal", [["Franco", "57.4%", "Suppress menghentikan kombo 3 skill Julian secara mutlak."], ["Baxia", "56.5%", "Memotong spell vamp deras Julian di tengah pertarungan."], ["Eudora", "55.7%", "Stun instan membunuh Julian sebelum ia mengeluarkan skill ke-3."], ["Saber", "54.9%", "Mengunci Julian yang berdarah tipis saat maju menyerang."]], "Gunakan Radiant Armor & item Anti-Heal."],
+            "fredrinn": ["Crystal Energy Taunt & Appraiser's Wrath • Lemah terhadap True Damage", [["Karrie", "58.4%", "True Damage menghancurkan HP tebal dan energi kristal Fredrinn."], ["Valir", "57.2%", "Mendorong Fredrinn menjauh agar gagal mendaratkan ayunan pedang Ultimate."], ["Lunox", "56.3%", "Damage magis berbasis HP melelehkan Fredrinn dengan cepat."], ["X.Borg", "55.5%", "True Damage berkelanjutan sangat efektif melawan Fredrinn."]], "Gunakan item Anti-Heal & hindari berdiri tepat di garis tengah tebasan Ultimate-nya."],
+            "joy": ["Beats Dash & Rhythm Burst • Sangat ter-counter oleh Anti-Dash & Suppress", [["Minsitthar", "59.4%", "King's Calling menghentikan seluruh lompatan irama Joy seketika."], ["Phoveus", "58.5%", "Setiap dash beat Joy memicu lompatan Phoveus tanpa henti."], ["Franco", "57.3%", "Suppress mengunci Joy saat mengumpulkan stack irama."], ["Kaja", "56.2%", "Menarik Joy keluar sebelum ia sempat mengaktifkan Electrifying Beats."]], "Gunakan Radiant Armor atau Athena's Shield."],
+            "novaria": ["Astral Snipe & Wall Walk • Sangat rapuh jika terkejar di balik tembok", [["Ling", "58.1%", "Mengejar Novaria melintasi tembok dengan kecepatan tinggi."], ["Fanny", "57.4%", "Terbang mengikuti Novaria bahkan saat ia masuk ke dalam tembok."], ["Hayabusa", "56.5%", "Menyergap Novaria di posisi sniper-nya di garis belakang."], ["Lolita", "55.6%", "Guardian's Bulwark memantulkan tembakan bintang sniper Novaria."]], "Gunakan Athena's Shield."],
+            "arlott": ["Vengeance Dash Spam • Sangat ter-counter oleh Anti-Dash", [["Minsitthar", "59.2%", "King's Calling menghentikan seluruh reset dash Vengeance Arlott."], ["Phoveus", "58.3%", "Setiap dash cepat Arlott memicu lompatan Phoveus terus-menerus."], ["Diggie", "57.1%", "Time Journey menghapus tanda mark Arlott dan membatalkan tebasan Ultimatenya."], ["Khufra", "56.0%", "Bouncing Ball memblokir luncuran Arlott di teamfight."]], "Gunakan Antique Cuirass & item Anti-Heal."],
+            "ixia": ["Full Barrage Area Ultimate • Diam di tempat saat menembak Ultimate", [["Hayabusa", "57.8%", "Menyergap Ixia yang tidak bisa bergerak saat mengaktifkan Full Barrage."], ["Lolita", "56.9%", "Guardian's Bulwark memantulkan seluruh tembakan area Ultimate Ixia."], ["Ling", "56.1%", "Melompati tembok langsung ke belakang posisi Ixia."], ["Fanny", "55.4%", "Terbang cepat ke sisi samping/belakang area tembakan Ixia."]], "Keluar dari area kipas Full Barrage Ixia dan gunakan Blade Armor."],
+            "nolan": ["Dimensional Rift Burst • Lemah terhadap Hard CC & Anti-Dash", [["Phoveus", "57.9%", "Setiap dash Nolan memicu lompatan Phoveus secara beruntun."], ["Minsitthar", "57.0%", "King's Calling mengunci pergerakan cepat Nolan di dalam arena."], ["Franco", "56.1%", "Suppress menghentikan kombo retakan dimensi Nolan."], ["Khufra", "55.3%", "Bouncing Ball memblokir dash masuk dan keluar Nolan."]], "Gunakan Antique Cuirass."],
+            "cici": ["Yo-Yo %HP Damage & Kiting • Lemah terhadap Burst & Anti-Heal", [["Saber", "57.4%", "Triple Sweep langsung mengunci dan membunuh Cici yang berdarah tipis."], ["Hayabusa", "56.5%", "Mampu mengejar Cici yang melompat-lompat dengan bayangan."], ["Baxia", "55.7%", "Memotong spell vamp Cici dan menempelinya dengan roda."], ["Eudora", "54.9%", "Burst instan menumbangkan Cici sebelum sempat memulihkan HP."]], "Gunakan Antique Cuirass & item Anti-Heal."],
+            "chip": ["META S+ Roam • Global Teleport & Gank", [["Diggie", "58.0%", "Menetralkan efek CC area saat tim lawan keluar dari portal Chip."], ["Tigreal", "56.3%", "Memanfaatkan portal Chip untuk membanting balik seluruh musuh yang berteleportasi."], ["Atlas", "55.8%", "Menunggu musuh berkumpul di titik keluar portal Chip lalu melakukan Fatal Links."], ["Vexana", "54.9%", "Menjatuhkan Eternal Guard tepat di atas portal saat musuh berkerumun."]], "Perhatikan minimap saat musuh menghilang karena potensi gank portal Chip."],
+            "zhuxin": ["META S+ Mid • Area Control & Crowd Control", [["Helcurt", "57.3%", "Silence dan burst cepat memutus channeling Lantern Flare Zhuxin."], ["Fanny", "56.8%", "Kecepatan kabel terlalu sulit ditangkap oleh area tarikan lentera Zhuxin."], ["Hayabusa", "55.9%", "Mampu menyergap Zhuxin di lini belakang dan keluar lewat bayangan."], ["Diggie", "55.1%", "Membebaskan rekan satu tim dari efek lemparan Crimson Butterfly."]], "Beli Athena's Shield atau Radiant Armor untuk menahan damage magis berkelanjutan."],
+            "suyou": ["META S+ Jungler • Fleksibel Tap/Hold Skill", [["Phoveus", "57.0%", "Banyaknya skill dash Suyou memicu reset serangan Phoveus secara terus-menerus."], ["Franco", "55.8%", "Suppress menghentikan Suyou saat menahan skill (Hold state) maupun saat menerjang."], ["Ruby", "55.2%", "CC singkat beruntun mengganggu transisi kombo wujud fana dan abadi Suyou."], ["Saber", "54.4%", "Mengunci Suyou saat ia berada dalam mode serangan jarak dekat."]], "Gunakan Antique Cuirass untuk mengurangi Physical Attack dari seluruh rangkaian skill Suyou."],
+            "lukas": ["META Fighter • Transformasi & Sustain Kuat", [["Karrie", "56.8%", "True Damage beruntun menembus pertahanan tebal wujud Sacred Beast Lukas."], ["Dyrroth", "55.9%", "Pengurangan Physical Defense 75% melemahkan durabilitas Lukas di duel 1v1."], ["Valir", "55.3%", "Memperlambat dan mendorong Lukas agar sulit menempel ke target."], ["X.Borg", "54.6%", "True Damage berkelanjutan mengikis darah tebal Lukas dengan aman."]], "Beli Sea Halberd atau Dominance Ice untuk menekan regenerasi saat Lukas berubah wujud."],
+            "kalea": ["META S+ Roam • High CC & Sustain", [["Diggie", "59.1%", "Time Journey membatalkan seluruh rangkaian efek bantingan dan CC Kalea."], ["Valir", "56.7%", "Mendorong mundur Kalea setiap kali ia mencoba menerjang masuk ke barisan depan."], ["Baxia", "55.4%", "Mengurangi pemulihan HP Kalea secara pasif selama pertarungan panjang."], ["Karrie", "54.9%", "True Damage menghancurkan ketahanan Kalea saat berada di garis depan."]], "Gunakan item Anti-Heal (Dominance Ice / Glowing Wand / Sea Halberd) dan jaga jarak formasi."],
+            "zetian": ["META Mage • Zone Control & Burst Magis", [["Ling", "56.9%", "Melompat melewati dinding langsung ke posisi Zetian di garis belakang."], ["Fanny", "56.4%", "Mobilitas tinggi memudahkan Fanny menyergap Zetian sebelum sempat berlindung."], ["Kadita", "55.1%", "Kombo menyelam dengan immune CC menumbangkan Zetian dalam sekejap."], ["Lancelot", "54.7%", "Menghindari area serangan Zetian menggunakan Thorned Rose."]], "Gunakan Athena's Shield untuk meredam burst damage magis Zetian di mid-late game."],
+            "obsidia": ["META Marksman • Burst & Finisher Jarak Jauh", [["Lolita", "57.6%", "Guardian's Bulwark memblokir proyektil serangan jarak jauh Obsidia."], ["Hayabusa", "56.3%", "Mudah menjangkau Obsidia di lini belakang menggunakan Quad Shadow."], ["Natalia", "55.4%", "Kebal terhadap basic attack saat berada di dalam tabir asap."], ["Claude", "54.5%", "Unggul mobilitas rotasi dan mampu menyelam ke lini belakang dengan Blazing Duet."]], "Gunakan Wind of Nature atau Blade Armor untuk membalikkan burst damage fisik Obsidia."],
+            "sora": ["META Fighter/Assassin • Mobilitas & Burst tinggi", [["Phoveus", "57.8%", "Menghukum setiap pergerakan dash Sora dengan lompatan dan shield tebal."], ["Minsitthar", "56.9%", "Mengunci skill mobilitas Sora di dalam area King's Calling."], ["Franco", "55.4%", "Suppress memutus kombo serangan cepat Sora sebelum masuk ke lini belakang."], ["Valir", "54.7%", "Mendorong mundur Sora setiap kali ia mencoba menerjang masuk."]], "Gunakan Antique Cuirass untuk meredam burst fisik Sora dan jaga jarak saat ia mengumpulkan stack."],
+            "marcel": ["META Support • Utility & Kontrol Teamfight", [["Diggie", "58.1%", "Time Journey menetralkan efek kontrol dan gangguan tempo tim Marcel."], ["Helcurt", "56.4%", "Dark Night Falls memutus penglihatan tim lawan dan menculik Marcel dengan cepat."], ["Natalia", "55.5%", "Mengincar Marcel di lini belakang tanpa terdeteksi saat rotasi."], ["Kaja", "54.6%", "Menarik Marcel keluar dari formasi perlindungan timnya."]], "Incar Marcel terlebih dahulu di awal teamfight agar tim lawan kehilangan sumber utility utamanya."],
+            "hirara": ["Hero Terbaru #133 • High Burst Assassin", [["Khufra", "57.5%", "Bouncing Ball memblokir manuver sergapan cepat Hirara di teamfight."], ["Saber", "56.2%", "Mengunci pergerakan Hirara secara instan begitu ia masuk ke area core."], ["Minsitthar", "55.9%", "Menutup ruang gerak dan skill blink Hirara di dalam arena Ultimate."], ["Eudora", "54.8%", "Kombo stun-burst memaksa Hirara tumbang sebelum menyelesaikan eksekusi."]], "Gunakan Wind of Nature (Marksman) atau Winter Crown (Mage) untuk menggagalkan momen burst Hirara."]
+        };
+
+        // Peta cepat untuk mencari role hero counter
+        const HERO_ROLE_MAP = {};
+        ALL_HEROES_LIST.forEach(h => {
+            HERO_ROLE_MAP[h.name.toLowerCase()] = h.role;
+        });
+
+        /**
+         * Pengelompokan Warna Berdasarkan Role Utama
+         */
+        const ROLE_STYLES = {
+            "Fighter": {
+                gradient: "from-red-600 to-red-950",
+                border: "border-red-500/60",
+                badge: "bg-red-500/20 text-red-300 border-red-500/40",
+                activeBtn: "bg-red-600"
+            },
+            "Assassin": {
+                gradient: "from-purple-600 to-purple-950",
+                border: "border-purple-500/60",
+                badge: "bg-purple-500/20 text-purple-300 border-purple-500/40",
+                activeBtn: "bg-purple-600"
+            },
+            "Mage": {
+                gradient: "from-blue-600 to-blue-950",
+                border: "border-blue-500/60",
+                badge: "bg-blue-500/20 text-blue-300 border-blue-500/40",
+                activeBtn: "bg-blue-600"
+            },
+            "Marksman": {
+                gradient: "from-amber-500 to-amber-950",
+                border: "border-amber-400/60",
+                badge: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+                activeBtn: "bg-amber-600"
+            },
+            "Tank": {
+                gradient: "from-emerald-600 to-emerald-950",
+                border: "border-emerald-500/60",
+                badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+                activeBtn: "bg-emerald-600"
+            },
+            "Support": {
+                gradient: "from-cyan-500 to-cyan-950",
+                border: "border-cyan-400/60",
+                badge: "bg-cyan-500/20 text-cyan-300 border-cyan-500/40",
+                activeBtn: "bg-cyan-600"
+            }
+        };
+
+        /**
+         * Membangun database lengkap 133 hero dengan URL foto lokal & cadangan otomatis
+         */
+        const HERO_DATABASE = ALL_HEROES_LIST.map(h => {
+            const id = h.name.toLowerCase().replace(/[^a-z0-9]/g, "");
+            const paddedOrder = String(h.order).padStart(2, "0");
+            
+            // Mengubah nama hero menjadi nama file pada folder mlbb_hero_photos/ (contoh: "Chang'e" -> "Chang_e.png")
+            const photoFileName = ({ "X.Borg": "XBorg", "Yu Zhong": "YuZhong", "Luo Yi": "LuoYi", "Popol and Kupa": "PopolandKupa" })[h.name] || h.name.replace(/[^A-Za-z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
+                        const localPhotoUrl = `mlbb_hero_photos/${encodeURIComponent(photoFileName)}.png`;
+
+            // URL Avatar Cadangan jika file lokal tidak tersedia di direktori saat ini
+            const primaryCdnUrl = `https://mlbb.io/images/heroes/${h.slug}.webp`;
+            const secondaryCdnUrl = `https://static.wikia.nocookie.net/mobile-legends/images/thumb/Hero${paddedOrder}1-icon.png/120px-Hero${paddedOrder}1-icon.png`;
+
+            const rawCounter = FULL_COUNTER_DATA[h.slug] || [
+                `${h.roles.join("/")} • Matchup META 2026`,
+                [
+                    ["Franco", "56.0%", `Suppress menghentikan pergerakan ${h.name} secara mutlak.`],
+                    ["Diggie", "55.5%", `Menetralkan efek kontrol dan gangguan tempo tim ${h.name}.`],
+                    ["Karrie", "55.0%", `True Damage menembus pertahanan ${h.name} di teamfight.`],
+                    ["Valir", "54.5%", `Menjaga jarak aman dari jangkauan serangan ${h.name}.`]
+                ],
+                "Gunakan item defensif & Anti-Heal sesuai sumber damage utama lawan."
+            ];
+
+            const roleStyle = ROLE_STYLES[h.role] || ROLE_STYLES["Fighter"];
+
+            return {
+                id,
+                order: h.order,
+                name: h.name,
+                slug: h.slug,
+                role: h.role,
+                roles: h.roles,
+                lane: h.lane,
+                tier: `META ${h.tier}`,
+                imageUrl: localPhotoUrl,
+                backupImageUrl: primaryCdnUrl,
+                tertiaryImageUrl: secondaryCdnUrl,
+                color: roleStyle.gradient,
+                borderColor: roleStyle.border,
+                badgeColor: roleStyle.badge,
+                patchStatus: rawCounter[0],
+                counters: rawCounter[1].map(c => ({
+                    name: c[0],
+                    role: HERO_ROLE_MAP[c[0].toLowerCase()] || "Fighter",
+                    winRate: c[1],
+                    reason: c[2]
+                })),
+                tips: rawCounter[2]
+            };
+        });
+
+        // State Aplikasi
+        let currentRole = "All";
+        let searchQuery = "";
+
+        // Elemen DOM
+        const heroGrid = document.getElementById("heroGrid");
+        const searchInput = document.getElementById("searchInput");
+        const clearSearchBtn = document.getElementById("clearSearchBtn");
+        const roleButtons = document.querySelectorAll(".role-btn");
+        const heroCountBadge = document.getElementById("heroCountBadge");
+        const emptyState = document.getElementById("emptyState");
+
+        // Elemen Modal
+        const counterModal = document.getElementById("counterModal");
+        const closeModalBtn = document.getElementById("closeModalBtn");
+        const modalHeroAvatar = document.getElementById("modalHeroAvatar");
+        const modalHeroName = document.getElementById("modalHeroName");
+        const modalHeroPatch = document.getElementById("modalHeroPatch");
+        let patchOverrides = { heroes: {} };
+        fetch("patch_override.json", { cache: "no-store" })
+            .then(response => response.ok ? response.json() : Promise.reject(new Error("Patch JSON unavailable")))
+            .then(data => {
+                if (data && data.heroes && typeof data.heroes === "object") {
+                    patchOverrides = data;
+                    renderHeroes();
+                }
+            })
+            .catch(() => {});
+
+        function getPatchChange(heroName) {
+            const change = patchOverrides.heroes?.[heroName]?.change;
+            if (change === "buff") return { symbol: "↑", label: "Buff", color: "text-green-400" };
+            if (change === "nerf") return { symbol: "↓", label: "Nerf", color: "text-red-400" };
+            return null;
+        }
+        const modalHeroRole = document.getElementById("modalHeroRole");
+        const modalPatchNote = document.getElementById("modalPatchNote");
+        const counterList = document.getElementById("counterList");
+        const counterTips = document.getElementById("counterTips");
+
+        /**
+         * Membuat inisial 2 huruf sebagai fallback jika gambar sedang dimuat / gagal
+         */
+        function getInitials(name) {
+            return name.replace(/[^a-zA-Z ]/g, "").split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+        }
+
+        /**
+         * Mendapatkan data visual (foto resmi & warna fallback) berdasarkan nama hero
+         */
+        function getHeroVisual(heroName) {
+            const cleanId = heroName.toLowerCase().replace(/[^a-z0-9]/g, "");
+            const found = HERO_DATABASE.find(h => h.id === cleanId || h.name.toLowerCase() === heroName.toLowerCase());
+            if (found) {
+                return {
+                    imageUrl: found.imageUrl,
+                    backupImageUrl: found.backupImageUrl,
+                    tertiaryImageUrl: found.tertiaryImageUrl,
+                    color: found.color,
+                    borderColor: found.borderColor,
+                    badgeColor: found.badgeColor,
+                    initials: getInitials(found.name),
+                    exists: true,
+                    data: found
+                };
+            }
+            return {
+                imageUrl: "",
+                backupImageUrl: "",
+                tertiaryImageUrl: "",
+                color: "from-slate-600 to-slate-800",
+                borderColor: "border-white/15",
+                badgeColor: "bg-slate-700 text-slate-300 border-slate-600",
+                initials: getInitials(heroName),
+                exists: false,
+                data: null
+            };
+        }
+
+        /**
+         * Handler fallback gambar otomatis (Folder Lokal -> CDN Utama -> CDN Cadangan -> Inisial)
+         */
+        function handleImgError(imgEl, backupUrl, tertiaryUrl) {
+            if (backupUrl && imgEl.dataset.fallbackStep !== "1" && imgEl.dataset.fallbackStep !== "2") {
+                imgEl.dataset.fallbackStep = "1";
+                imgEl.src = backupUrl;
+            } else if (tertiaryUrl && imgEl.dataset.fallbackStep !== "2") {
+                imgEl.dataset.fallbackStep = "2";
+                imgEl.src = tertiaryUrl;
+            } else {
+                imgEl.style.display = "none";
+            }
+        }
+
+        /**
+         * Render Grid Ikon Hero (1:1 iOS App Style dengan Foto Resmi Hero)
+         */
+        function renderHeroes() {
+            const filtered = HERO_DATABASE.filter(hero => {
+                const matchRole = currentRole === "All" || hero.roles.includes(currentRole);
+                const matchSearch = hero.name.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchRole && matchSearch;
+            });
+
+            heroCountBadge.textContent = `${filtered.length} Hero`;
+            heroGrid.innerHTML = "";
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove("hidden");
+                return;
+            } else {
+                emptyState.classList.add("hidden");
+            }
+
+            filtered.forEach(hero => {
+                const item = document.createElement("button");
+                item.type = "button";
+                item.className = "hero-item flex flex-col items-center text-center focus:outline-none group";
+                item.onclick = () => openCounterModal(hero);
+
+                const patchChange = getPatchChange(hero.name);
+
+                item.innerHTML = `
+                    <div class="w-full ios-icon bg-gradient-to-br ${hero.color} relative flex items-center justify-center overflow-hidden border-2 ${hero.borderColor}">
+                        <!-- Fallback Inisial di belakang gambar -->
+                        <span class="text-base sm:text-lg font-extrabold text-white/90 tracking-tight select-none">
+                            ${getInitials(hero.name)}
+                        </span>
+
+                        <!-- Foto Resmi Hero -->
+                        <img 
+                            src="${hero.imageUrl}" 
+                            alt="${hero.name}" 
+                            loading="lazy"
+                            onerror="handleImgError(this, '${hero.backupImageUrl}', '${hero.tertiaryImageUrl}')"
+                            class="absolute inset-0 w-full h-full object-cover object-top"
+                        >
+
+                        <!-- Efek kilau halus di bagian atas ikon ala iOS -->
+                        <div class="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-white/20 to-transparent pointer-events-none"></div>
+                        
+                        ${patchChange ? `<span class="absolute top-1 right-1 z-10 text-lg font-bold ${patchChange.color}" role="img" aria-label="${patchChange.label}">${patchChange.symbol}</span>` : ""}
+                    </div>
+                    <span class="mt-1.5 text-[11px] sm:text-xs font-medium text-slate-200 group-hover:text-sky-400 truncate w-full px-0.5 transition-colors">
+                        ${hero.name}
+                    </span>
+                `;
+
+                heroGrid.appendChild(item);
+            });
+        }
+
+        /**
+         * Membuka Popup Detail Counter untuk Hero yang dipilih
+         */
+        function openCounterModal(hero) {
+            // Set Header Modal dengan Foto Resmi Hero
+            modalHeroAvatar.className = `w-14 h-14 ios-icon bg-gradient-to-br ${hero.color} flex items-center justify-center text-white font-extrabold text-xl shrink-0 relative overflow-hidden border-2 ${hero.borderColor}`;
+            modalHeroAvatar.innerHTML = `
+                <span>${getInitials(hero.name)}</span>
+                <img 
+                    src="${hero.imageUrl}" 
+                    alt="${hero.name}" 
+                    onerror="handleImgError(this, '${hero.backupImageUrl}', '${hero.tertiaryImageUrl}')"
+                    class="absolute inset-0 w-full h-full object-cover object-top"
+                >
+                <div class="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-white/20 to-transparent pointer-events-none"></div>
+            `;
+            modalHeroName.textContent = hero.name;
+            const patchChange = getPatchChange(hero.name);
+            modalHeroPatch.textContent = patchChange?.symbol || "";
+            modalHeroPatch.className = `text-lg font-bold ${patchChange?.color || ""}`;
+            modalHeroPatch.title = patchChange?.label || "Tidak ada perubahan patch tercatat";
+            modalHeroPatch.setAttribute("aria-label", patchChange?.label || "Tidak ada perubahan patch tercatat");
+            modalHeroRole.textContent = `${hero.roles.join(" / ")} • ${hero.lane}`;
+            const patchEntry = patchOverrides.heroes?.[hero.name];
+            modalPatchNote.textContent = patchEntry ? `${patchOverrides.patch || "Patch"}: ${patchEntry.note || patchChange?.label || "Perubahan"}` : "Tidak ada perubahan patch tercatat";
+
+            // Render Daftar Counter beserta Foto Resmi masing-masing Hero Counter
+            counterList.innerHTML = "";
+            hero.counters.forEach((counter, index) => {
+                const visual = getHeroVisual(counter.name);
+                const roleBadgeStyle = (ROLE_STYLES[counter.role] && ROLE_STYLES[counter.role].badge) || visual.badgeColor;
+                const card = document.createElement("div");
+                card.className = `p-3 rounded-xl bg-slate-800/80 border border-slate-700/70 flex items-start gap-3 transition ${visual.exists ? "hover:border-sky-500/50 cursor-pointer" : ""}`;
+                
+                if (visual.exists) {
+                    card.onclick = () => openCounterModal(visual.data);
+                }
+
+                card.innerHTML = `
+                    <div class="w-11 h-11 ios-icon bg-gradient-to-br ${visual.color} flex items-center justify-center text-white font-bold text-sm shrink-0 relative overflow-hidden border-2 ${visual.borderColor}">
+                        <span>${visual.initials}</span>
+                        ${visual.imageUrl ? `
+                            <img 
+                                src="${visual.imageUrl}" 
+                                alt="${counter.name}" 
+                                onerror="handleImgError(this, '${visual.backupImageUrl}', '${visual.tertiaryImageUrl}')"
+                                class="absolute inset-0 w-full h-full object-cover object-top"
+                            >
+                        ` : ""}
+                        <div class="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-white/20 to-transparent pointer-events-none"></div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-1.5 truncate">
+                                <span class="text-xs font-bold text-sky-400">#${index + 1}</span>
+                                <h4 class="text-sm font-bold text-white truncate">${counter.name}</h4>
+                                <span class="text-[10px] font-medium px-1.5 py-0.5 rounded border ${roleBadgeStyle}">${counter.role}</span>
+                            </div>
+                            <span class="text-[11px] font-semibold text-emerald-400 shrink-0">WR ${counter.winRate}</span>
+                        </div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">${counter.reason}</p>
+                    </div>
+                `;
+                counterList.appendChild(card);
+            });
+
+            // Set Tips Item & Spell
+            counterTips.textContent = hero.tips;
+
+            // Tampilkan Modal
+            counterModal.classList.remove("hidden");
+            counterModal.classList.add("flex");
+            document.body.style.overflow = "hidden";
+        }
+
+        /**
+         * Menutup Popup Modal
+         */
+        function closeCounterModal() {
+            counterModal.classList.add("hidden");
+            counterModal.classList.remove("flex");
+            document.body.style.overflow = "";
+        }
+
+        // Event Listeners: Pencarian
+        searchInput.addEventListener("input", (e) => {
+            searchQuery = e.target.value.trim();
+            clearSearchBtn.classList.toggle("hidden", searchQuery.length === 0);
+            renderHeroes();
+        });
+
+        clearSearchBtn.addEventListener("click", () => {
+            searchInput.value = "";
+            searchQuery = "";
+            clearSearchBtn.classList.add("hidden");
+            searchInput.focus();
+            renderHeroes();
+        });
+
+        // Event Listeners: Filter Role
+        const ALL_ACTIVE_CLASSES = ["bg-sky-500", "bg-red-600", "bg-purple-600", "bg-blue-600", "bg-amber-600", "bg-emerald-600", "bg-cyan-600", "text-white", "active"];
+
+        roleButtons.forEach(btn => {
+            btn.addEventListener("click", () => {
+                roleButtons.forEach(b => {
+                    b.classList.remove(...ALL_ACTIVE_CLASSES);
+                    b.classList.add("bg-slate-800", "text-slate-300");
+                    const dot = b.querySelector("span");
+                    if (dot) dot.classList.remove("bg-white");
+                });
+
+                const selectedRole = btn.dataset.role;
+                const activeBg = (ROLE_STYLES[selectedRole] && ROLE_STYLES[selectedRole].activeBtn) || "bg-sky-500";
+
+                btn.classList.remove("bg-slate-800", "text-slate-300");
+                btn.classList.add(activeBg, "text-white", "active");
+                const activeDot = btn.querySelector("span");
+                if (activeDot) activeDot.classList.add("bg-white");
+
+                currentRole = selectedRole;
+                renderHeroes();
+            });
+        });
+
+        // Event Listeners: Modal Close
+        closeModalBtn.addEventListener("click", closeCounterModal);
+        counterModal.addEventListener("click", (e) => {
+            if (e.target === counterModal) closeCounterModal();
+        });
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && !counterModal.classList.contains("hidden")) {
+                closeCounterModal();
+            }
+        });
+
+        // Render Awal
+        renderHeroes();
+    </script>
+</body>
+</html>
